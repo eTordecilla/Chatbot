@@ -24,11 +24,14 @@ export default function App() {
       `}</style>
 
       {/* Ambient background blobs */}
-      <div style={styles.bgBlob1} />
-      <div style={styles.bgBlob2} />
-      <div style={styles.bgBlob3} />
+      <div className="fixed w-[500px] h-[500px] rounded-full pointer-events-none z-0 -top-[150px] left-[20%]"
+           style={{ background: 'radial-gradient(circle, rgba(79,126,255,0.08) 0%, transparent 70%)' }} />
+      <div className="fixed w-[400px] h-[400px] rounded-full pointer-events-none z-0 -bottom-[100px] right-[10%]"
+           style={{ background: 'radial-gradient(circle, rgba(124,92,255,0.10) 0%, transparent 70%)' }} />
+      <div className="fixed w-[300px] h-[300px] rounded-full pointer-events-none z-0 top-[40%] -left-[100px]"
+           style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.05) 0%, transparent 70%)' }} />
 
-      <div style={styles.shell}>
+      <div className="relative z-10 flex h-screen overflow-hidden">
         <Sidebar active={activeNav} onNav={setActiveNav} />
         <ChatPanel />
         <RightPanel knowledgeStatus={knowledgeStatus} />
@@ -36,27 +39,3 @@ export default function App() {
     </>
   );
 }
-
-const styles = {
-  bgBlob1: {
-    position: 'fixed', width: 500, height: 500, borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(79,126,255,0.08) 0%, transparent 70%)',
-    top: -150, left: '20%', pointerEvents: 'none', zIndex: 0,
-  },
-  bgBlob2: {
-    position: 'fixed', width: 400, height: 400, borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(124,92,255,0.10) 0%, transparent 70%)',
-    bottom: -100, right: '10%', pointerEvents: 'none', zIndex: 0,
-  },
-  bgBlob3: {
-    position: 'fixed', width: 300, height: 300, borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(239,68,68,0.05) 0%, transparent 70%)',
-    top: '40%', left: -100, pointerEvents: 'none', zIndex: 0,
-  },
-  shell: {
-    position: 'relative', zIndex: 1,
-    display: 'flex',
-    height: '100vh',
-    overflow: 'hidden',
-  },
-};

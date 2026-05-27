@@ -7,23 +7,28 @@ export default function RightPanel({ knowledgeStatus }) {
   const [likedQuote, setLikedQuote] = React.useState(false);
 
   return (
-    <aside style={styles.panel}>
-      <div style={styles.blob} />
+    <aside className="w-67.5 shrink-0 flex flex-col gap-2.5 py-4 px-3.5 overflow-y-auto bg-(--bg-panel) backdrop-blur-2xl border-l border-(--border) relative">
 
-      {/* Knowledge base */}
-      <section style={styles.card}>
-        <div style={styles.cardHeader}>
+      {/* Blob decorativo */}
+      <div className="absolute w-50 h-50 rounded-full pointer-events-none -top-15 -right-15"
+           style={{ background: 'radial-gradient(circle, rgba(124,92,255,0.12) 0%, transparent 70%)' }} />
+
+      {/* Base de Conocimiento */}
+      <section className="bg-(--bg-card) backdrop-blur-md border border-(--border) rounded-2xl py-3 px-3.5">
+        <div className="flex items-center gap-1.75 mb-2.5">
           <Globe size={15} color="var(--accent)" />
-          <span style={styles.cardTitle}>Base de Conocimiento</span>
-          <div style={{ ...styles.statusDot, background: knowledgeStatus?.exists ? '#22c55e' : '#ef4444' }} />
+          <span className="text-[13px] font-semibold text-(--text-primary) flex-1">Base de Conocimiento</span>
+          <div className="w-1.75 h-1.75 rounded-full" style={{ background: knowledgeStatus?.exists ? '#22c55e' : '#ef4444' }} />
         </div>
-        <div style={styles.topics}>
+        <div className="flex flex-wrap gap-1.5">
           {topics.map(t => (
-            <span key={t} style={styles.topic}>{t}</span>
+            <span key={t} className="text-[11px] py-1 px-2.5 rounded-[20px] bg-(--bg-hover) border border-(--border-accent) text-(--accent) cursor-pointer">
+              {t}
+            </span>
           ))}
         </div>
         {knowledgeStatus && (
-          <div style={styles.kbMeta}>
+          <div className="text-[11px] text-(--text-muted) mt-2">
             {knowledgeStatus.exists
               ? `📂 ${knowledgeStatus.sizeKB} KB · ${knowledgeStatus.lines} líneas`
               : '⚠️ Archivo no encontrado'}
@@ -31,19 +36,20 @@ export default function RightPanel({ knowledgeStatus }) {
         )}
       </section>
 
-      {/* Quote */}
-      <section style={styles.card}>
-        <div style={styles.cardHeader}>
+      {/* Frase del día */}
+      <section className="bg-(--bg-card) backdrop-blur-md border border-(--border) rounded-2xl py-3 px-3.5">
+        <div className="flex items-center gap-1.75 mb-2.5">
           <Quote size={15} color="var(--accent2)" />
-          <span style={styles.cardTitle}>Frase del día</span>
+          <span className="text-[13px] font-semibold text-(--text-primary) flex-1">Frase del día</span>
         </div>
-        <p style={styles.quoteText}>
+        <p className="text-[13px] text-(--text-secondary) leading-[1.6] italic mb-2">
           "La excelencia no es un acto, sino un hábito."
         </p>
-        <div style={styles.quoteFooter}>
-          <span style={styles.quoteAuthor}>— Aristóteles</span>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-(--text-muted)">— Aristóteles</span>
           <button
-            style={{ ...styles.heartBtn, color: likedQuote ? '#ef4444' : 'var(--text-muted)' }}
+            className="flex p-0.5 cursor-pointer"
+            style={{ color: likedQuote ? '#ef4444' : 'var(--text-muted)' }}
             onClick={() => setLikedQuote(v => !v)}
           >
             <Heart size={14} fill={likedQuote ? '#ef4444' : 'none'} />
@@ -51,90 +57,31 @@ export default function RightPanel({ knowledgeStatus }) {
         </div>
       </section>
 
-      {/* Weather */}
-      <section style={styles.card}>
-        <div style={styles.cardHeader}>
+      {/* Clima */}
+      <section className="bg-(--bg-card) backdrop-blur-md border border-(--border) rounded-2xl py-3 px-3.5">
+        <div className="flex items-center gap-1.75 mb-2.5">
           <Cloud size={15} color="#60a5fa" />
-          <span style={styles.cardTitle}>Clima · Medellín, CO</span>
+          <span className="text-[13px] font-semibold text-(--text-primary) flex-1">Clima · Medellín, CO</span>
         </div>
-        <div style={styles.weatherRow}>
+        <div className="flex items-center justify-between mb-2.5">
           <div>
-            <div style={styles.weatherTemp}>24°C</div>
-            <div style={styles.weatherDesc}>Parcialmente nublado</div>
+            <div className="text-[28px] font-bold text-(--text-primary) leading-none">24°C</div>
+            <div className="text-[11px] text-(--text-secondary) mt-0.75">Parcialmente nublado</div>
           </div>
-          <div style={styles.weatherCloud}>☁️</div>
+          <div className="text-[36px]">☁️</div>
         </div>
-        <div style={styles.weatherGrid}>
-          <div style={styles.weatherStat}><span>Humedad</span><strong>68%</strong></div>
-          <div style={styles.weatherStat}><span>Viento</span><strong>14 km/h</strong></div>
-          <div style={styles.weatherStat}><span>Sensación</span><strong>22°C</strong></div>
+        <div className="flex gap-2">
+          <div className="flex-1 flex flex-col gap-0.5 text-[11px] text-(--text-muted)">
+            <span>Humedad</span><strong>68%</strong>
+          </div>
+          <div className="flex-1 flex flex-col gap-0.5 text-[11px] text-(--text-muted)">
+            <span>Viento</span><strong>14 km/h</strong>
+          </div>
+          <div className="flex-1 flex flex-col gap-0.5 text-[11px] text-(--text-muted)">
+            <span>Sensación</span><strong>22°C</strong>
+          </div>
         </div>
       </section>
     </aside>
   );
 }
-
-const styles = {
-  panel: {
-    width: 'var(--right-w)',
-    flexShrink: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 10,
-    padding: '16px 14px',
-    overflowY: 'auto',
-    background: 'var(--bg-panel)',
-    backdropFilter: 'blur(24px)',
-    borderLeft: '1px solid var(--border)',
-    position: 'relative',
-  },
-  blob: {
-    position: 'absolute',
-    width: 200, height: 200,
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(124,92,255,0.12) 0%, transparent 70%)',
-    top: -60, right: -60, pointerEvents: 'none',
-  },
-  card: {
-    background: 'var(--bg-card)',
-    backdropFilter: 'blur(12px)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--radius)',
-    padding: '12px 14px',
-  },
-  cardHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 7,
-    marginBottom: 10,
-  },
-  cardTitle: { fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', flex: 1 },
-  statusDot: { width: 7, height: 7, borderRadius: '50%' },
-
-  topics: { display: 'flex', flexWrap: 'wrap', gap: 6 },
-  topic: {
-    fontSize: 11,
-    padding: '4px 10px',
-    borderRadius: 20,
-    background: 'var(--bg-hover)',
-    border: '1px solid var(--border-accent)',
-    color: 'var(--accent)',
-    cursor: 'pointer',
-  },
-  kbMeta: { fontSize: 11, color: 'var(--text-muted)', marginTop: 8 },
-
-  quoteText: { fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: 8 },
-  quoteFooter: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  quoteAuthor: { fontSize: 12, color: 'var(--text-muted)' },
-  heartBtn: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 2 },
-
-  weatherRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  weatherTemp: { fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 },
-  weatherDesc: { fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 },
-  weatherCloud: { fontSize: 36 },
-  weatherGrid: { display: 'flex', gap: 8 },
-  weatherStat: {
-    flex: 1, display: 'flex', flexDirection: 'column', gap: 2,
-    fontSize: 11, color: 'var(--text-muted)',
-  },
-};

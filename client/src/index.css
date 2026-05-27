@@ -1,24 +1,19 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@import "tailwindcss";
 
 :root {
-  --bg-deep:    #0b0d1a;
-  --bg-panel:   rgba(16, 20, 45, 0.85);
-  --bg-card:    rgba(22, 27, 60, 0.75);
-  --bg-input:   rgba(255,255,255,0.06);
-  --bg-hover:   rgba(255,255,255,0.08);
-  --accent:     #4f7eff;
-  --accent2:    #7c5cff;
-  --accent-glow: rgba(79,126,255,0.35);
+  --bg-deep:        #0b0d1a;
+  --bg-panel:       rgba(16, 20, 45, 0.85);
+  --bg-card:        rgba(22, 27, 60, 0.75);
+  --bg-input:       rgba(255,255,255,0.06);
+  --bg-hover:       rgba(255,255,255,0.08);
+  --accent:         #4f7eff;
+  --accent2:        #7c5cff;
+  --accent-glow:    rgba(79,126,255,0.35);
   --text-primary:   #e8eaf6;
   --text-secondary: rgba(200,210,255,0.55);
   --text-muted:     rgba(200,210,255,0.35);
-  --border:     rgba(255,255,255,0.09);
-  --border-accent: rgba(79,126,255,0.4);
-  --user-bubble: linear-gradient(135deg, #4f7eff, #7c5cff);
-  --sidebar-w: 220px;
-  --right-w: 270px;
-  --radius: 16px;
-  --radius-sm: 10px;
+  --border:         rgba(255,255,255,0.09);
+  --border-accent:  rgba(79,126,255,0.4);
 }
 
 html, body, #root {
@@ -34,10 +29,9 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
 
-button { font-family: inherit; cursor: pointer; border: none; background: none; }
+button { font-family: inherit; }
 input, textarea { font-family: inherit; }

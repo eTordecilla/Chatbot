@@ -9,13 +9,33 @@ const QUICK_CHIPS = [
   '¿Cómo recupero mi contraseña?',
 ];
 
+function BotAvatar({ size = 34 }) {
+  return (
+    <div
+      className="rounded-full flex items-center justify-center gap-1 shrink-0"
+      style={{
+        width: size, height: size,
+        border: size < 40 ? '1.5px solid var(--accent)' : '2px solid var(--accent)',
+        boxShadow: `0 0 ${size < 40 ? 10 : 16}px var(--accent-glow)`,
+        background: 'radial-gradient(circle at 40% 35%, rgba(124,92,255,0.3), rgba(79,126,255,0.1))',
+      }}
+    >
+      <span className="inline-block w-1.75 h-1.75 rounded-full bg-(--accent)"
+            style={{ boxShadow: '0 0 5px var(--accent)' }} />
+      <span className="inline-block w-1.75 h-1.75 rounded-full bg-(--accent)"
+            style={{ boxShadow: '0 0 5px var(--accent)' }} />
+    </div>
+  );
+}
+
 function TypingDots() {
   return (
-    <div style={styles.typingWrap}>
-      {[0,1,2].map(i => (
+    <div className="flex gap-1.25 py-1 items-center">
+      {[0, 1, 2].map(i => (
         <span
           key={i}
-          style={{ ...styles.dot, animationDelay: `${i * 0.2}s` }}
+          className="inline-block w-1.75 h-1.75 rounded-full bg-(--accent)"
+          style={{ animation: 'bounce 1.2s infinite ease-in-out', animationDelay: `${i * 0.2}s` }}
         />
       ))}
     </div>
@@ -24,9 +44,7 @@ function TypingDots() {
 
 function Message({ msg }) {
   const isUser = msg.role === 'user';
-  const text = msg.content;
-
-  const formatted = text
+  const formatted = msg.content
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/^(\d+)\. (.+)$/gm, '<div style="margin:4px 0;"><span style="color:var(--accent);font-weight:600;">$1.</span> $2</div>')
@@ -34,39 +52,41 @@ function Message({ msg }) {
     .replace(/\n/g, '<br/>');
 
   return (
-    <div style={{ ...styles.msgWrap, justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
-      {!isUser && (
-        <div style={styles.botAvatar}>
-          <span style={styles.eye}/><span style={styles.eye}/>
-        </div>
-      )}
-      <div style={{ maxWidth: '75%' }}>
-        <div style={isUser ? styles.userBubble : styles.botBubble}>
-          {msg.typing
-            ? <TypingDots />
-            : <span dangerouslySetInnerHTML={{ __html: formatted }} />}
-        </div>
+    <div className={`flex gap-2.5 items-end ${isUser ? 'justify-end' : 'justify-start'}`}>
+      {!isUser && <BotAvatar size={34} />}
+      <div className="max-w-[75%]">
+        {isUser ? (
+          <div className="rounded-[16px_16px_4px_16px] px-3.5 py-2.5 text-sm leading-[1.65] text-white"
+               style={{ background: 'linear-gradient(135deg, #4f7eff, #7c5cff)' }}>
+            {msg.typing ? <TypingDots /> : <span dangerouslySetInnerHTML={{ __html: formatted }} />}
+          </div>
+        ) : (
+          <div className="bg-(--bg-card) backdrop-blur-md border border-(--border) rounded-[16px_16px_16px_4px] px-3.5 py-2.5 text-sm leading-[1.65] text-(--text-primary)">
+            {msg.typing ? <TypingDots /> : <span dangerouslySetInnerHTML={{ __html: formatted }} />}
+          </div>
+        )}
         {!msg.typing && (
-          <div style={{ ...styles.timestamp, textAlign: isUser ? 'right' : 'left' }}>
+          <div className={`text-[11px] text-(--text-muted) mt-1 px-1 ${isUser ? 'text-right' : 'text-left'}`}>
             {msg.time}{isUser && ' ✓✓'}
           </div>
         )}
       </div>
       {isUser && (
-        <div style={styles.userAvatar}>YA</div>
+        <div className="w-8.5 h-8.5 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
+             style={{ background: 'linear-gradient(135deg, #4f7eff, #7c5cff)' }}>
+          YA
+        </div>
       )}
     </div>
   );
 }
 
 export default function ChatPanel() {
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: '¡Hola! Soy tu asistente de soporte de **Portal Yamaha** y **Pedidos Yamaha**. ¿En qué puedo ayudarte hoy?',
-      time: formatTime(new Date()),
-    }
-  ]);
+  const [messages, setMessages] = useState([{
+    role: 'assistant',
+    content: '¡Hola! Soy tu asistente de soporte de **Portal Yamaha** y **Pedidos Yamaha**. ¿En qué puedo ayudarte hoy?',
+    time: formatTime(new Date()),
+  }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
@@ -85,13 +105,10 @@ export default function ChatPanel() {
     const msg = (text || input).trim();
     if (!msg || loading) return;
     setInput('');
-    if (textareaRef.current) { textareaRef.current.style.height = '44px'; }
+    if (textareaRef.current) textareaRef.current.style.height = '44px';
 
-    const userMsg = { role: 'user', content: msg, time: formatTime(new Date()) };
-    setMessages(prev => [...prev, userMsg]);
-
-    const typingMsg = { role: 'assistant', content: '', typing: true, time: '' };
-    setMessages(prev => [...prev, typingMsg]);
+    setMessages(prev => [...prev, { role: 'user', content: msg, time: formatTime(new Date()) }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: '', typing: true, time: '' }]);
     setLoading(true);
 
     const newHistory = [...history, { role: 'user', content: msg }];
@@ -100,21 +117,15 @@ export default function ChatPanel() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, history })
+        body: JSON.stringify({ message: msg, history }),
       });
       const data = await res.json();
       const reply = data.reply || 'Lo siento, no pude procesar tu consulta.';
-
       setMessages(prev => {
         const next = [...prev];
-        next[next.length - 1] = {
-          role: 'assistant',
-          content: reply,
-          time: formatTime(new Date())
-        };
+        next[next.length - 1] = { role: 'assistant', content: reply, time: formatTime(new Date()) };
         return next;
       });
-
       setHistory([...newHistory, { role: 'assistant', content: reply }]);
     } catch {
       setMessages(prev => {
@@ -122,7 +133,7 @@ export default function ChatPanel() {
         next[next.length - 1] = {
           role: 'assistant',
           content: '⚠️ No se pudo conectar con el servidor. Asegúrate de que el backend esté corriendo en el puerto 3001.',
-          time: formatTime(new Date())
+          time: formatTime(new Date()),
         };
         return next;
       });
@@ -131,10 +142,7 @@ export default function ChatPanel() {
   }
 
   function handleKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   }
 
   function autoResize(e) {
@@ -143,43 +151,51 @@ export default function ChatPanel() {
   }
 
   return (
-    <div style={styles.chat}>
+    <div className="flex-1 flex flex-col overflow-hidden bg-[rgba(11,13,26,0.6)] backdrop-blur-[20px]">
+
       {/* Header */}
-      <div style={styles.header}>
-        <div style={styles.botAvatar2}>
-          <span style={styles.eye}/><span style={styles.eye}/>
-        </div>
+      <div className="flex items-center gap-3 px-5 py-3.5 border-b border-(--border) bg-(--bg-card) shrink-0">
+        <BotAvatar size={42} />
         <div>
-          <div style={styles.headerName}>¡Hola! Soy tu asistente Yamaha ✨</div>
-          <div style={styles.headerSub}>¿En qué puedo ayudarte hoy?</div>
+          <div className="text-sm font-semibold text-(--text-primary)">¡Hola! Soy tu asistente Yamaha ✨</div>
+          <div className="text-xs text-(--text-secondary)">¿En qué puedo ayudarte hoy?</div>
         </div>
-        <div style={styles.headerActions}>
-          <button style={styles.iconBtn}><Volume2 size={16} /></button>
-          <button style={styles.iconBtn}><MoreHorizontal size={16} /></button>
+        <div className="ml-auto flex gap-1">
+          <button className="w-8 h-8 rounded-lg bg-(--bg-input) border border-(--border) text-(--text-secondary) flex items-center justify-center cursor-pointer transition-all duration-150">
+            <Volume2 size={16} />
+          </button>
+          <button className="w-8 h-8 rounded-lg bg-(--bg-input) border border-(--border) text-(--text-secondary) flex items-center justify-center cursor-pointer transition-all duration-150">
+            <MoreHorizontal size={16} />
+          </button>
         </div>
       </div>
 
-      {/* Messages */}
-      <div style={styles.messages}>
+      {/* Mensajes */}
+      <div className="flex-1 overflow-y-auto px-5 pt-5 pb-3 flex flex-col gap-3.5">
         {messages.map((m, i) => <Message key={i} msg={m} />)}
         <div ref={bottomRef} />
       </div>
 
       {/* Quick chips */}
-      <div style={styles.chips}>
+      <div className="px-5 py-2 flex gap-1.5 flex-wrap border-t border-(--border) shrink-0">
         {QUICK_CHIPS.map(c => (
-          <button key={c} style={styles.chip} onClick={() => sendMessage(c)}>
+          <button
+            key={c}
+            onClick={() => sendMessage(c)}
+            className="text-xs py-1.25 px-3 rounded-[20px] bg-(--bg-input) border border-(--border-accent) text-(--text-secondary) cursor-pointer transition-all duration-150 whitespace-nowrap"
+          >
             {c}
           </button>
         ))}
       </div>
 
       {/* Input */}
-      <div style={styles.inputBar}>
-        <button style={styles.iconBtn}><Paperclip size={18} /></button>
+      <div className="flex items-end gap-2 p-3 px-4 bg-(--bg-card) border-t border-(--border) shrink-0">
+        <button className="w-8 h-8 rounded-lg bg-(--bg-input) border border-(--border) text-(--text-secondary) flex items-center justify-center cursor-pointer">
+          <Paperclip size={18} />
+        </button>
         <textarea
           ref={textareaRef}
-          style={styles.textarea}
           value={input}
           onChange={e => setInput(e.target.value)}
           onInput={autoResize}
@@ -187,11 +203,17 @@ export default function ChatPanel() {
           placeholder="Escribe tu mensaje..."
           rows={1}
           disabled={loading}
+          className="flex-1 bg-(--bg-input) border border-(--border) rounded-3xl py-2.75 px-4.5 text-sm text-(--text-primary) resize-none outline-none leading-[1.4] transition-colors duration-150 placeholder:text-(--text-muted)"
+          style={{ height: 44, maxHeight: 120 }}
         />
         <button
-          style={{ ...styles.sendBtn, opacity: (!input.trim() || loading) ? 0.5 : 1 }}
           onClick={() => sendMessage()}
           disabled={!input.trim() || loading}
+          className="w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 transition-opacity duration-150 cursor-pointer disabled:opacity-50"
+          style={{
+            background: 'linear-gradient(135deg, #4f7eff, #7c5cff)',
+            boxShadow: '0 4px 15px rgba(79,126,255,0.4)',
+          }}
         >
           <Send size={16} />
         </button>
@@ -199,132 +221,3 @@ export default function ChatPanel() {
     </div>
   );
 }
-
-const styles = {
-  chat: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    background: 'rgba(11,13,26,0.6)',
-    backdropFilter: 'blur(20px)',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    padding: '14px 20px',
-    borderBottom: '1px solid var(--border)',
-    background: 'var(--bg-card)',
-    flexShrink: 0,
-  },
-  botAvatar: {
-    width: 34, height: 34, borderRadius: '50%',
-    border: '1.5px solid var(--accent)',
-    boxShadow: '0 0 10px var(--accent-glow)',
-    background: 'radial-gradient(circle at 40% 35%, rgba(124,92,255,0.3), rgba(79,126,255,0.1))',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-    flexShrink: 0,
-  },
-  botAvatar2: {
-    width: 42, height: 42, borderRadius: '50%',
-    border: '2px solid var(--accent)',
-    boxShadow: '0 0 16px var(--accent-glow)',
-    background: 'radial-gradient(circle at 40% 35%, rgba(124,92,255,0.3), rgba(79,126,255,0.1))',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-    flexShrink: 0,
-  },
-  eye: {
-    display: 'inline-block', width: 7, height: 7, borderRadius: '50%',
-    background: 'var(--accent)', boxShadow: '0 0 5px var(--accent)',
-  },
-  userAvatar: {
-    width: 34, height: 34, borderRadius: '50%',
-    background: 'linear-gradient(135deg, #4f7eff, #7c5cff)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0,
-  },
-  headerName: { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' },
-  headerSub:  { fontSize: 12, color: 'var(--text-secondary)' },
-  headerActions: { marginLeft: 'auto', display: 'flex', gap: 4 },
-  iconBtn: {
-    width: 32, height: 32, borderRadius: 8,
-    background: 'var(--bg-input)', border: '1px solid var(--border)',
-    color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', transition: 'background 0.15s',
-  },
-  messages: {
-    flex: 1, overflowY: 'auto',
-    padding: '20px 20px 12px',
-    display: 'flex', flexDirection: 'column', gap: 14,
-  },
-  msgWrap: { display: 'flex', gap: 10, alignItems: 'flex-end' },
-  botBubble: {
-    background: 'var(--bg-card)',
-    backdropFilter: 'blur(12px)',
-    border: '1px solid var(--border)',
-    borderRadius: '16px 16px 16px 4px',
-    padding: '10px 14px',
-    fontSize: 14, lineHeight: 1.65,
-    color: 'var(--text-primary)',
-    maxWidth: '100%',
-  },
-  userBubble: {
-    background: 'linear-gradient(135deg, #4f7eff, #7c5cff)',
-    borderRadius: '16px 16px 4px 16px',
-    padding: '10px 14px',
-    fontSize: 14, lineHeight: 1.65, color: '#fff',
-  },
-  timestamp: { fontSize: 11, color: 'var(--text-muted)', marginTop: 4, paddingInline: 4 },
-  typingWrap: { display: 'flex', gap: 5, padding: '4px 2px', alignItems: 'center' },
-  dot: {
-    display: 'inline-block', width: 7, height: 7, borderRadius: '50%',
-    background: 'var(--accent)',
-    animation: 'bounce 1.2s infinite ease-in-out',
-  },
-  chips: {
-    padding: '8px 20px',
-    display: 'flex', gap: 6, flexWrap: 'wrap',
-    borderTop: '1px solid var(--border)',
-    flexShrink: 0,
-  },
-  chip: {
-    fontSize: 12, padding: '5px 12px',
-    borderRadius: 20,
-    background: 'var(--bg-input)',
-    border: '1px solid var(--border-accent)',
-    color: 'var(--text-secondary)',
-    cursor: 'pointer', transition: 'all 0.15s',
-    whiteSpace: 'nowrap',
-  },
-  inputBar: {
-    display: 'flex', alignItems: 'flex-end', gap: 8,
-    padding: '12px 16px',
-    background: 'var(--bg-card)',
-    borderTop: '1px solid var(--border)',
-    flexShrink: 0,
-  },
-  textarea: {
-    flex: 1,
-    background: 'var(--bg-input)',
-    border: '1px solid var(--border)',
-    borderRadius: 24,
-    padding: '11px 18px',
-    fontSize: 14,
-    color: 'var(--text-primary)',
-    resize: 'none',
-    outline: 'none',
-    height: 44,
-    maxHeight: 120,
-    lineHeight: 1.4,
-    transition: 'border-color 0.15s',
-  },
-  sendBtn: {
-    width: 44, height: 44, borderRadius: '50%',
-    background: 'linear-gradient(135deg, #4f7eff, #7c5cff)',
-    boxShadow: '0 4px 15px rgba(79,126,255,0.4)',
-    border: 'none', cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: '#fff', flexShrink: 0, transition: 'opacity 0.15s',
-  },
-};
