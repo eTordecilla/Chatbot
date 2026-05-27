@@ -1,0 +1,14 @@
+{
+  "name": "yamaha-chatbot",
+  "version": "1.0.0",
+  "description": "Chatbot de soporte para Portal Yamaha y Pedidos Yamaha",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "install:all": "pnpm install",
+    "dev": "concurrently \"pnpm --filter yamaha-chatbot-server dev\" \"pnpm --filter yamaha-chatbot-client dev\"",
+    "start": "concurrently \"pnpm --filter yamaha-chatbot-server start\" \"pnpm --filter yamaha-chatbot-client dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
