@@ -1,8 +1,9 @@
 import React from 'react';
 import {
   MessageCircle, Compass, CheckSquare, Bell,
-  Folder, Clock, Settings, ChevronDown
+  Folder, Clock, Settings, ChevronDown, User
 } from 'lucide-react';
+import yamahaLogo from '../assets/incolmotos.svg';
 
 const navItems = [
   { icon: MessageCircle, label: 'Chat',          id: 'chat' },
@@ -20,25 +21,13 @@ export default function Sidebar({ active, onNav }) {
 
       {/* Blob decorativo */}
       <div className="absolute w-[200px] h-[200px] rounded-full pointer-events-none -bottom-[60px] -left-[60px]"
-           style={{ background: 'radial-gradient(circle, rgba(79,126,255,0.15) 0%, transparent 70%)' }} />
-
-      {/* Bot */}
+           style={{ background: 'radial-gradient(circle, rgba(79,126,255,0.15) 0%, transparent 70%)' }} />      {/* Bot */}
       <div className="flex flex-col items-center gap-2.5 mb-7 pb-5 border-b border-(--border)">
-        <div className="w-16 h-16 rounded-full border-2 border-(--accent) flex items-center justify-center"
+        <div className="w-16 h-16 rounded-full border-2 border-(--border) flex items-center justify-center bg-white p-2"
              style={{
-               boxShadow: '0 0 20px var(--accent-glow), inset 0 0 20px rgba(79,126,255,0.1)',
-               background: 'radial-gradient(circle at 40% 35%, rgba(124,92,255,0.3), rgba(79,126,255,0.1))',
+               boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
              }}>
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex">
-              <span className="inline-block w-2 h-2 rounded-full bg-(--accent) mx-0.75"
-                    style={{ boxShadow: '0 0 6px var(--accent)' }} />
-              <span className="inline-block w-2 h-2 rounded-full bg-(--accent) mx-0.75"
-                    style={{ boxShadow: '0 0 6px var(--accent)' }} />
-            </div>
-            <span className="block w-3.5 h-1.5 rounded-b-[10px] border-2 border-(--accent) border-t-0"
-                  style={{ boxShadow: '0 0 6px var(--accent)' }} />
-          </div>
+          <img src={yamahaLogo} alt="Yamaha" className="w-full h-full object-contain" />
         </div>
         <div>
           <div className="text-sm font-semibold text-(--text-primary) text-center">Asistente ✨</div>
@@ -63,21 +52,40 @@ export default function Sidebar({ active, onNav }) {
             <span>{label}</span>
           </button>
         ))}
-      </nav>
-
+      </nav>    
       {/* Usuario */}
-      <div className="flex items-center gap-2 p-2.5 rounded-[10px] bg-(--bg-input) border border-(--border) mt-2">
-        <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
-             style={{ background: 'linear-gradient(135deg, #4f7eff, #7c5cff)' }}>
-          YA
-        </div>
-        <div className="flex-1 min-w-0">
+      <div 
+        className="flex items-center gap-2 p-2.5 rounded-[10px] bg-[#e8eaec] border border-(--border) mt-2 w-full cursor-pointer hover:bg-[#dcdfe2] transition-colors"
+      >
+        <svg 
+          className="w-6 h-6 shrink-0" 
+          style={{ color: '#ff0000' }}
+          focusable="false" 
+          aria-hidden="true" 
+          viewBox="0 0 24 24"
+        >
+          <path 
+            fill="currentColor"
+            d="M10.25 13c0 .69-.56 1.25-1.25 1.25S7.75 13.69 7.75 13s.56-1.25 1.25-1.25 1.25.56 1.25 1.25M15 11.75c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25m7 .25c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10m-2 0c0-.78-.12-1.53-.33-2.24-.7.15-1.42.24-2.17.24-3.13 0-5.92-1.44-7.76-3.69C8.69 8.87 6.6 10.88 4 11.86c.01.04 0 .09 0 .14 0 4.41 3.59 8 8 8s8-3.59 8-8"
+          />
+        </svg>
+        <div className="flex-1 min-w-0 text-left">
           <div className="text-[13px] font-medium text-(--text-primary) whitespace-nowrap overflow-hidden text-ellipsis">
             Usuario Yamaha
           </div>
-          <div className="text-[11px] text-amber-400">⭐ Cuenta Corporativa</div>
         </div>
-        <ChevronDown size={14} color="rgba(200,210,255,0.4)" />
+        <svg 
+          className="w-5 h-5 shrink-0" 
+          style={{ color: 'var(--gray10)' }}
+          focusable="false" 
+          aria-hidden="true" 
+          viewBox="0 0 24 24"
+        >
+          <path 
+            fill="currentColor"
+            d="M15.88 9.29 12 13.17 8.12 9.29a.996.996 0 0 0-1.41 0c-.39.39-.39 1.02 0 1.41l4.59 4.59c.39.39 1.02.39 1.41 0l4.59-4.59c.39-.39.39-1.02 0-1.41-.39-.38-1.03-.39-1.42 0"
+          />
+        </svg>
       </div>
     </aside>
   );

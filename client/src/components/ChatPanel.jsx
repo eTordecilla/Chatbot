@@ -12,18 +12,15 @@ const QUICK_CHIPS = [
 function BotAvatar({ size = 34 }) {
   return (
     <div
-      className="rounded-full flex items-center justify-center gap-1 shrink-0"
+      className="rounded-full flex items-center justify-center shrink-0"
       style={{
         width: size, height: size,
-        border: size < 40 ? '1.5px solid var(--accent)' : '2px solid var(--accent)',
-        boxShadow: `0 0 ${size < 40 ? 10 : 16}px var(--accent-glow)`,
-        background: 'radial-gradient(circle at 40% 35%, rgba(124,92,255,0.3), rgba(79,126,255,0.1))',
+        background: '#0a2d82',
+        border: `${size < 40 ? '1.5px' : '2px'} solid rgba(10,45,130,0.4)`,
+        boxShadow: '0 0 10px rgba(10,45,130,0.25)',
       }}
     >
-      <span className="inline-block w-1.75 h-1.75 rounded-full bg-(--accent)"
-            style={{ boxShadow: '0 0 5px var(--accent)' }} />
-      <span className="inline-block w-1.75 h-1.75 rounded-full bg-(--accent)"
-            style={{ boxShadow: '0 0 5px var(--accent)' }} />
+      <span style={{ color: '#fff', fontWeight: 700, fontSize: size < 40 ? 11 : 13 }}>YA</span>
     </div>
   );
 }
@@ -34,8 +31,12 @@ function TypingDots() {
       {[0, 1, 2].map(i => (
         <span
           key={i}
-          className="inline-block w-1.75 h-1.75 rounded-full bg-(--accent)"
-          style={{ animation: 'bounce 1.2s infinite ease-in-out', animationDelay: `${i * 0.2}s` }}
+          className="inline-block w-1.75 h-1.75 rounded-full"
+          style={{
+            background: '#0a2d82',
+            animation: 'bounce 1.2s infinite ease-in-out',
+            animationDelay: `${i * 0.2}s`,
+          }}
         />
       ))}
     </div>
@@ -47,7 +48,7 @@ function Message({ msg }) {
   const formatted = msg.content
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/^(\d+)\. (.+)$/gm, '<div style="margin:4px 0;"><span style="color:var(--accent);font-weight:600;">$1.</span> $2</div>')
+    .replace(/^(\d+)\. (.+)$/gm, '<div style="margin:4px 0;"><span style="color:#0a2d82;font-weight:600;">$1.</span> $2</div>')
     .replace(/^[-•] (.+)$/gm, '<div style="margin:3px 0;">• $1</div>')
     .replace(/\n/g, '<br/>');
 
@@ -56,8 +57,10 @@ function Message({ msg }) {
       {!isUser && <BotAvatar size={34} />}
       <div className="max-w-[75%]">
         {isUser ? (
-          <div className="rounded-[16px_16px_4px_16px] px-3.5 py-2.5 text-sm leading-[1.65] text-white"
-               style={{ background: 'linear-gradient(135deg, #4f7eff, #7c5cff)' }}>
+          <div
+            className="rounded-[16px_16px_4px_16px] px-3.5 py-2.5 text-sm leading-[1.65] text-white"
+            style={{ background: '#0a2d82' }}
+          >
             {msg.typing ? <TypingDots /> : <span dangerouslySetInnerHTML={{ __html: formatted }} />}
           </div>
         ) : (
@@ -72,13 +75,19 @@ function Message({ msg }) {
         )}
       </div>
       {isUser && (
-        <div className="w-8.5 h-8.5 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
-             style={{ background: 'linear-gradient(135deg, #4f7eff, #7c5cff)' }}>
+        <div
+          className="w-8.5 h-8.5 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
+          style={{ background: '#ff0000' }}
+        >
           YA
         </div>
       )}
     </div>
   );
+}
+
+function formatTime(d) {
+  return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function ChatPanel() {
@@ -96,10 +105,6 @@ export default function ChatPanel() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  function formatTime(d) {
-    return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-  }
 
   async function sendMessage(text) {
     const msg = (text || input).trim();
@@ -151,22 +156,14 @@ export default function ChatPanel() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-[rgba(11,13,26,0.6)] backdrop-blur-[20px]">
+    <div className="flex-1 flex flex-col overflow-hidden bg-(--bg-deep)">
 
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-3.5 border-b border-(--border) bg-(--bg-card) shrink-0">
+      <div className="flex items-center gap-3 px-5 py-3.5 border-b border-(--border) bg-(--bg-panel) shrink-0">
         <BotAvatar size={42} />
         <div>
           <div className="text-sm font-semibold text-(--text-primary)">¡Hola! Soy tu asistente Yamaha ✨</div>
           <div className="text-xs text-(--text-secondary)">¿En qué puedo ayudarte hoy?</div>
-        </div>
-        <div className="ml-auto flex gap-1">
-          <button className="w-8 h-8 rounded-lg bg-(--bg-input) border border-(--border) text-(--text-secondary) flex items-center justify-center cursor-pointer transition-all duration-150">
-            <Volume2 size={16} />
-          </button>
-          <button className="w-8 h-8 rounded-lg bg-(--bg-input) border border-(--border) text-(--text-secondary) flex items-center justify-center cursor-pointer transition-all duration-150">
-            <MoreHorizontal size={16} />
-          </button>
         </div>
       </div>
 
@@ -177,12 +174,19 @@ export default function ChatPanel() {
       </div>
 
       {/* Quick chips */}
-      <div className="px-5 py-2 flex gap-1.5 flex-wrap border-t border-(--border) shrink-0">
+      <div className="px-5 py-2 flex gap-1.5 flex-wrap border-t border-(--border) bg-(--bg-panel) shrink-0">
         {QUICK_CHIPS.map(c => (
           <button
             key={c}
             onClick={() => sendMessage(c)}
-            className="text-xs py-1.25 px-3 rounded-[20px] bg-(--bg-input) border border-(--border-accent) text-(--text-secondary) cursor-pointer transition-all duration-150 whitespace-nowrap"
+            className="text-xs py-1.25 px-3 rounded-[20px] border cursor-pointer whitespace-nowrap transition-all duration-150"
+            style={{
+              background: '#fff',
+              border: '1px solid #e0e2e4',
+              color: '#616365',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#ff0000'; e.currentTarget.style.color = '#ff0000'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0e2e4'; e.currentTarget.style.color = '#616365'; }}
           >
             {c}
           </button>
@@ -190,7 +194,7 @@ export default function ChatPanel() {
       </div>
 
       {/* Input */}
-      <div className="flex items-end gap-2 p-3 px-4 bg-(--bg-card) border-t border-(--border) shrink-0">
+      <div className="flex items-end gap-2 p-3 px-4 bg-(--bg-panel) border-t border-(--border) shrink-0">
         <button className="w-8 h-8 rounded-lg bg-(--bg-input) border border-(--border) text-(--text-secondary) flex items-center justify-center cursor-pointer">
           <Paperclip size={18} />
         </button>
@@ -203,17 +207,14 @@ export default function ChatPanel() {
           placeholder="Escribe tu mensaje..."
           rows={1}
           disabled={loading}
-          className="flex-1 bg-(--bg-input) border border-(--border) rounded-3xl py-2.75 px-4.5 text-sm text-(--text-primary) resize-none outline-none leading-[1.4] transition-colors duration-150 placeholder:text-(--text-muted)"
-          style={{ height: 44, maxHeight: 120 }}
+          className="flex-1 border border-(--border) rounded-3xl py-2.75 px-4.5 text-sm text-(--text-primary) resize-none outline-none leading-[1.4] placeholder:text-(--text-muted)"
+          style={{ height: 44, maxHeight: 120, background: '#f2f5f7' }}
         />
         <button
           onClick={() => sendMessage()}
           disabled={!input.trim() || loading}
-          className="w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 transition-opacity duration-150 cursor-pointer disabled:opacity-50"
-          style={{
-            background: 'linear-gradient(135deg, #4f7eff, #7c5cff)',
-            boxShadow: '0 4px 15px rgba(79,126,255,0.4)',
-          }}
+          className="w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 cursor-pointer disabled:opacity-50 transition-opacity duration-150"
+          style={{ background: '#ff0000' }}
         >
           <Send size={16} />
         </button>

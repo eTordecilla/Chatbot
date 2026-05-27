@@ -10,7 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const KNOWLEDGE_FILE_PATH = path.resolve(__dirname, '../knowledge/base.txt');
+const KNOWLEDGE_FILE_PATH = path.resolve(__dirname, '../knowledge/BancoDePreguntasPortalYPedidos.txt');
 
 // ── Parseo de base.txt ──────────────────────────────────────────────────────
 // Extrae bloques { question, answer } de pares PROBLEMA/SOLUCIÓN y PREGUNTA/RESPUESTA
@@ -92,8 +92,41 @@ function findBestMatch(query, blocks) {
       best = { ...block, score };
     }
   }
-
   return bestScore >= 0.3 ? best : null;
+}
+
+// ── Formateo de respuestas con JSON ─────────────────────────────────────────
+function formatResponseWithJson(text) {
+  // Detectar bloques que parecen JSON (objetos o arrays)
+  const jsonRegex = /(\{[\s\S]*?\}|\[[\s\S]*?\])/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = jsonRegex.exec(text)) !== null) {
+    // Agregar texto antes del JSON
+    if (match.index > lastIndex) {
+      parts.push({ type: 'text', content: text.slice(lastIndex, match.index) });
+    }
+    
+    // Intentar parsear como JSON válido
+    try {
+      const parsed = JSON.parse(match[0]);
+      parts.push({ type: 'json', content: JSON.stringify(parsed, null, 2) });
+    } catch {
+      // No es JSON válido, tratarlo como texto
+      parts.push({ type: 'text', content: match[0] });
+    }
+    
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Agregar texto restante
+  if (lastIndex < text.length) {
+    parts.push({ type: 'text', content: text.slice(lastIndex) });
+  }
+
+  return parts.length > 0 ? parts : [{ type: 'text', content: text }];
 }
 
 // ── Carga de base de conocimiento ───────────────────────────────────────────
@@ -136,6 +169,7 @@ app.post('/api/chat', (req, res) => {
   if (!knowledge) {
     return res.json({
       reply: 'Lo siento, la base de conocimiento no está disponible en este momento. Por favor contacta al equipo de soporte.',
+      replyParts: [{ type: 'text', content: 'Lo siento, la base de conocimiento no está disponible en este momento. Por favor contacta al equipo de soporte.' }],
       knowledgeLoaded: false,
     });
   }
@@ -146,7 +180,9 @@ app.post('/api/chat', (req, res) => {
     ? match.answer
     : 'No encontré información específica sobre tu consulta en la base de conocimiento. Te recomiendo contactar al equipo de soporte técnico de Yamaha para obtener ayuda personalizada.';
 
-  res.json({ reply, knowledgeLoaded: true });
+  const replyParts = formatResponseWithJson(reply);
+
+  res.json({ reply, replyParts, knowledgeLoaded: true });
 });
 
 const PORT = process.env.PORT || 3001;

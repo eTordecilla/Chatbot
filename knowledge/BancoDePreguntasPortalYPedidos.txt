@@ -1,0 +1,111 @@
+# BASE DE CONOCIMIENTO - PORTAL Y PEDIDOS YAMAHA
+# Este documento sirve como guía de referencia para solucionar los casos más 
+# comunes reportados en Portal Yamaha y Pedidos Yamaha.
+
+=== PEDIDOS YAMAHA ===
+
+PROBLEMA: Referencia no se visualiza en Pedidos Yamaha
+SOLUCIÓN:
+CAUSA: La referencia puede estar bloqueada en NAV o no está sincronizada con la tabla ITEM de Pedidos Yamaha.
+1. Ejecutar el SP (Stored Procedure) para validar que la referencia exista en NAV y que no esté bloqueada.
+2. Si la referencia existe en NAV: Revisar la tabla ITEM de pedidosyamaha. Si no existe en la tabla, significa que la referencia no está sincronizada.
+3. Para sincronizar manualmente: Ejecutar el SP con un ALTER. En Insomnia, ejecutar ItemSync con el parámetro ALL.
+4. Una vez completada la sincronización, verificar que la referencia ya se visualice en Pedidos Yamaha.
+
+PROBLEMA: Coordinador regional no visualiza todas las tiendas asignadas
+SOLUCIÓN:
+CAUSA: Problema de caché del navegador.
+1. Indicar al usuario que cierre la sesión actual.
+2. Refrescar el navegador (F5 o Ctrl+F5 para forzar).
+3. Volver a iniciar sesión.
+4. Verificar que las tiendas ahora sean visibles.
+
+PROBLEMA: CL habilitado en NAVISION pero no se visualiza en Pedidos Yamaha
+SOLUCIÓN:
+CAUSAS PROBABLES: 1) La tienda está bloqueada en NAVISION. 2) La tienda tiene una clasificación incorrecta. 3) La tienda fue creada o editada el mismo día.
+1. Verificar si la tienda está bloqueada: Desde NAVISION se puede visualizar, pero si está bloqueada no aparecerá en Pedidos Yamaha.
+2. Validar la clasificación de la tienda: Si la clasificación no corresponde, la tienda no se incluirá en la sincronización aunque esté bien creada.
+3. Verificar la fecha de creación/edición: Si la tienda fue creada o editada el mismo día, no aparecerá sincronizada porque tiene asociadas múltiples sincronizaciones (precios, descuentos, etc.). RECOMENDACIÓN: Esperar hasta el día siguiente cuando se hayan ejecutado todas las sincronizaciones automáticas.
+
+PROBLEMA: Coordinador no puede administrar o visualizar una devolución
+SOLUCIÓN:
+CAUSAS PROBABLES: 1) La solicitud de devolución está en estado "Abierto" (aún no enviada). 2) El coordinador no tiene asignada la tienda correspondiente.
+1. Verificar el estado de la devolución: Si está en estado "Abierto", el usuario aún no la ha enviado. Indicar al usuario que complete y envíe la solicitud.
+2. Validar asignación de tienda: El coordinador debe tener asignada la tienda desde Portal Yamaha para poder visualizar y administrar sus devoluciones.
+
+PROBLEMA: Devolución sin elementos y con fechas de garantía vencidas
+SOLUCIÓN:
+CAUSA: El sistema no permite agregar productos cuando las fechas de garantía están vencidas.
+1. Indicar al usuario que el sistema no permitirá agregar productos.
+2. Solicitar que realice el proceso de devolución por el método anterior: Llenar el formato de Excel y enviar la solicitud por correo electrónico.
+
+PROBLEMA: Pedido no se sincroniza a NAV
+SOLUCIÓN:
+CAUSA: El pedido no tiene PV (Pedido de Venta) asignado, lo que indica que nunca salió de Pedidos Yamaha hacia NAVISION.
+1. Verificar en el informe de NAV que el pedido efectivamente no existe en NAVISION.
+2. Validar en la tabla Order_Header de Pedidos Yamaha: Filtrar por el número de pedido (ej: No = '00000000000000000001'). Revisar el campo Nav_OrderNo para verificar si tiene PV asignado.
+3. Validar en la tabla B2B Order Header de NAVISION: Filtrar por Order GUID del pedido. Revisar la columna "Converted-To Document No_" para verificar si tiene un PV relacionado.
+4. Si NO existe en la tabla de NAV y NO tiene PV asignado, el pedido nunca salió de Pedidos Yamaha. Ejecutar sincronización manual: Abrir Insomnia, buscar el endpoint "order-to-nav", en el body agregar el número del pedido y enviar la petición.
+5. Verificar sincronización exitosa: Ir a Pedidos Yamaha y validar que el pedido ya tenga PV asignado. Consultar nuevamente ambas tablas y confirmar que el pedido ahora aparece con PV asignado.
+6. Si TIENE PV pero no está en NAV: Revisar en los reportes si hay referencias bloqueadas o dirección de envío bloqueada.
+
+PROBLEMA: Pedido facturó menos líneas de las solicitadas
+SOLUCIÓN:
+CAUSA: Las referencias que no aparecen en la factura no tenían stock disponible al momento del pedido, y el cliente no tiene habilitada la opción de BackOrder. En NAV existe la casilla "Permitir BO Flete Gratis". Si está MARCADA: El sistema permite enviar los productos con stock disponible y deja el resto en backorder para enviarlos dentro de los 60 días siguientes cuando haya stock, sin cobrar envío adicional. Si NO está MARCADA: El sistema solo despacha y factura lo que hay en stock; el resto se elimina de la factura.
+1. Verificar en NAV si el cliente tiene marcada la casilla "Permitir BO Flete Gratis".
+2. Explicar al usuario el comportamiento del sistema: Si la casilla no estaba marcada, solo se facturó lo disponible. El resto de las referencias fueron eliminadas del pedido.
+3. Si el cliente desea recibir productos en backorder en el futuro, solicitar que se habilite la casilla correspondiente en NAV.
+
+PROBLEMA: Informe de BackOrder no se ha actualizado
+SOLUCIÓN:
+CAUSA: El DMS no sincronizó el BackOrder correctamente.
+1. Verificar la tabla de respaldo: Consultar la tabla salesHeaderTemp de Pedidos Yamaha. Validar si contiene la información actualizada del BackOrder. Si la tabla temp tiene datos actualizados, confirma que el DMS no sincronizó la información.
+2. Reemplazar la información: IMPORTANTE: Antes de proceder, asegurarse de que la tabla salesHeaderTemp contenga TODOS los datos completos. Reemplazar toda la información de la tabla salesHeader con los datos de la tabla salesHeaderTemp. Ejecutar el COMMIT para confirmar los cambios.
+3. Verificar actualización: Validar que la tabla salesHeader ahora contenga la información actualizada. Confirmar con el usuario que el informe de BackOrder ya muestra los datos correctos.
+PRECAUCIÓN: Tener absoluta certeza de que salesHeaderTemp tiene todos los datos antes de reemplazar. Este proceso sobrescribe toda la información de salesHeader.
+
+PROBLEMA: Usuario visualiza múltiples carritos vacíos
+SOLUCIÓN:
+CAUSA: Error desconocido en el sistema. Tanto el backend como el frontend tienen una validación que impide crear un nuevo carrito mientras ya exista uno activo. Este comportamiento es anómalo y debe investigarse.
+1. Identificar los carritos vacíos: Abrir las herramientas de desarrollador del navegador (F12). Ir a la pestaña "Network". Buscar en el response del backend el campo "cartId" para identificar los IDs de los carritos.
+2. Validar en la base de datos: Consultar la tabla Order_Header de Pedidos Yamaha. Filtrar por los cartId identificados.
+3. Eliminar carritos vacíos: Si los carritos están vacíos (sin líneas), eliminarlos manualmente de la tabla Order_Header.
+4. Si los carritos tienen productos: Validar primero la tabla Order_Line antes de eliminar. Este escenario es muy raro. En caso de presentarse, consultar con Andrés Yepes antes de proceder.
+NOTA: Este caso requiere investigación adicional para determinar la causa raíz. Documentar los pasos realizados para futuras referencias.
+
+PROBLEMA: Referencia no se visualiza para realizar devolución
+SOLUCIÓN:
+CAUSA: La referencia no está activa para web en NAVISION.
+1. Validar en NAVISION: Verificar si la referencia está activa para web. Si no está activa, el sistema no permitirá realizar la devolución por el portal.
+2. Indicar al usuario el proceso alternativo: Informar que al no estar activa la referencia para web, el sistema no permite realizar la devolución por el portal. Solicitar que realice la devolución por el método tradicional: Llenar el formato de Excel de devoluciones y enviar la solicitud por correo electrónico.
+NOTA: Aunque la factura esté dentro del tiempo de garantía, si la referencia no está activa para web, la devolución debe hacerse manualmente.
+
+PROBLEMA: Devolución de sobrante de un ítem no facturado
+SOLUCIÓN:
+CAUSA: Error en el despacho donde se envió un producto adicional que no corresponde al pedido original.
+1. Ingresar al módulo de devoluciones: Digitar el número de la factura. En el campo "Motivo" seleccionar: Sobrante en despacho. IMPORTANTE: Dejar vacío el campo de referencia del producto.
+2. Agregar producto no facturado: Hacer clic en el botón "Agregar producto no facturado". En la ventana que se muestra, escribir la referencia del producto que necesita devolver. Hacer clic en "Buscar producto".
+3. Configurar la devolución: Una vez identificada la referencia, agregar la cantidad recibida. En la siguiente pantalla, ajustar la cantidad según corresponda. Agregar las observaciones pertinentes. Hacer clic en "Agregar a devolución".
+4. Verificar asociación: La devolución quedará automáticamente asociada a la factura (formato: CPFE-XXXXXX). Confirmar que la solicitud se haya creado correctamente.
+NOTA: Este proceso aplica únicamente para productos recibidos por error que no fueron solicitados ni facturados.
+
+=== PORTAL YAMAHA ===
+
+PROBLEMA: Usuario no aparece en el filtro de búsqueda de Portal Yamaha
+SOLUCIÓN:
+CAUSA: El usuario tiene roles asignados en Cognito pero no en la tabla de DynamoDB yamaha_usuarios.
+1. Consultar roles en Cognito: Ejecutar en Insomnia un POST a https://portal.incolmotos-yamaha.com.co/prod/admindb con el siguiente body:
+{"option":"searchTable","data":{"table":"yamaha-usuarios-cognito","field":"email","value":"correo_del_usuario@dominio.com"}}
+Este resultado mostrará los roles asociados al usuario en Cognito.
+2. Actualizar roles en DynamoDB: Ejecutar otro POST al mismo endpoint con el siguiente body:
+{"option":"createMultiple","data":{"table":"yamaha-usuarios","appData":[{"idaplicacion":"2tlmmojhe3ode5176tjq99f9kj","usuario":"correo_del_usuario@dominio.com","roles":["IYPY Gestor Centro de Partes"],"directivas":[],"recursos":[]}]}}
+NOTA: Reemplazar el correo y ajustar los roles según los obtenidos en el Paso 1.
+3. Verificar: Realizar nuevamente la búsqueda en Portal Yamaha para confirmar que el usuario ya se visualiza correctamente.
+
+PROBLEMA: Usuario no puede acceder a Portal Yamaha - Pantalla UPS Lo Sentimos
+SOLUCIÓN:
+CAUSA: La IP del usuario no está incluida en la whitelist de acceso.
+1. Solicitar al usuario que obtenga su IP pública: Indicarle que ingrese a https://whatismyip.com y pedirle que comparta la dirección IP que se muestra.
+2. Crear un caso en GLPI: Asignar el caso a Jhonny Mejia o Alejandro Arboleda. Incluir en la solicitud: Nombre del usuario, correo del usuario y dirección IP a agregar a la whitelist.
+3. Una vez agregada la IP, confirmar con el usuario que ya puede acceder a Portal Yamaha.
+	
