@@ -1,14 +1,13 @@
-# 🎵 Asistente Yamaha — Chatbot de Soporte
+# Chatbot de Soporte Técnico
 
-Chatbot de soporte técnico para **Portal Yamaha** y **Pedidos Yamaha**, construido con React + Node.js 24.
+Sistema de soporte técnico interno con interfaz web moderna. Permite a los usuarios consultar soluciones a problemas frecuentes mediante un chatbot que busca respuestas en una base de conocimiento local, sin depender de servicios externos.
 
 ## Estructura del proyecto
 
 ```
-yamaha-chatbot/
+chatbot/
 ├── server/              ← Backend Express (Node.js)
-│   ├── index.js         ← Servidor API
-│   ├── .env             ← Variables de entorno (API key)
+│   ├── index.js
 │   └── package.json
 ├── client/              ← Frontend React + Vite
 │   ├── src/
@@ -20,93 +19,86 @@ yamaha-chatbot/
 │   │   └── index.css
 │   └── package.json
 ├── knowledge/
-│   └── base.txt         ← ★ ARCHIVO DE BASE DE CONOCIMIENTO
+│   └── base.txt         ← Base de conocimiento (editable)
+├── pnpm-workspace.yaml
 └── package.json
 ```
 
 ## Requisitos
 
-- Node.js 24+
-- API Key de Anthropic (https://console.anthropic.com)
+- [Node.js 18+](https://nodejs.org) — descargar el instalador LTS para Windows
+- [pnpm](https://pnpm.io) — se instala con un solo comando después de Node.js
 
-## Instalación
+## Instalación en Windows
 
-```bash
-# 1. Clonar / descomprimir el proyecto
-cd yamaha-chatbot
+### 1. Instalar Node.js
+Descarga e instala la versión LTS desde https://nodejs.org. Marca la opción **"Add to PATH"** durante la instalación.
 
-# 2. Instalar dependencias (raíz + server + client)
-npm install
-npm run install:all
-
-# 3. Configurar la API Key
-#    Edita server/.env y reemplaza tu_api_key_aqui con tu clave real:
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxx...
-
-# 4. Iniciar la aplicación (servidor + cliente en paralelo)
-npm run dev
+### 2. Instalar pnpm
+Abre **PowerShell** o **CMD** y ejecuta:
+```powershell
+npm install -g pnpm
 ```
 
-Abre http://localhost:3000 en tu navegador.
-
-## Base de conocimiento — ★ Lo más importante
-
-El archivo de conocimiento está en: **`knowledge/base.txt`**
-
-**Para actualizar el banco de preguntas:**
-- Simplemente **abre el archivo `base.txt`** y agrega más contenido al final.
-- **No necesitas reiniciar** el servidor — el archivo se lee en cada consulta.
-- Puedes usar cualquier formato: preguntas y respuestas, párrafos, listas.
-
-### Formato recomendado para `base.txt`:
-
-```
-PROBLEMA: Descripción del problema
-SOLUCIÓN:
-1. Paso uno
-2. Paso dos
-3. Paso tres
-
-PREGUNTA: ¿Cómo hago algo?
-RESPUESTA: Explicación de cómo hacerlo...
-
-=== SECCIÓN NUEVA ===
-
-Puedes también escribir texto libre sin formato especial.
-El asistente entenderá el contenido de cualquier forma.
+Verifica que quedó instalado:
+```powershell
+pnpm --version
 ```
 
-## Cambiar la ruta del archivo de conocimiento
-
-Si quieres que el archivo `.txt` esté en otra ubicación, edita la línea en `server/index.js`:
-
-```js
-const KNOWLEDGE_FILE_PATH = path.resolve(
-  __dirname,
-  '../knowledge/base.txt'  // ← cambia esto a la ruta que prefieras
-);
+### 3. Clonar o descargar el proyecto
+```powershell
+git clone https://github.com/eTordecilla/Chatbot.git
+cd Chatbot
 ```
 
-Ejemplos:
-```js
-// Ruta absoluta en Windows
-'C:/Yamaha/DocumentosSoporte/preguntas.txt'
+O descarga el ZIP desde GitHub y descomprímelo. Luego abre la terminal dentro de la carpeta del proyecto.
 
-// Ruta absoluta en Linux/Mac
-'/home/usuario/yamaha/conocimiento.txt'
-
-// Relativa al servidor
-'../mi-carpeta/base.txt'
+### 4. Instalar dependencias
+```powershell
+pnpm install
 ```
+
+Esto instala automáticamente las dependencias del servidor y del cliente.
+
+### 5. Iniciar la aplicación
+```powershell
+pnpm dev
+```
+
+Abre tu navegador en **http://localhost:5173**
 
 ## Scripts disponibles
 
 | Comando | Descripción |
 |---|---|
-| `npm run dev` | Inicia servidor y cliente en modo desarrollo |
-| `npm run install:all` | Instala todas las dependencias |
+| `pnpm dev` | Inicia servidor y cliente en modo desarrollo |
+| `pnpm start` | Inicia en modo producción |
+| `pnpm install` | Instala todas las dependencias |
 
 ## Puertos
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
+| Servicio | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:3001 |
+
+## Base de conocimiento
+
+El archivo de conocimiento está en: **`knowledge/base.txt`**
+
+- Abre el archivo y agrega más contenido al final.
+- **No necesitas reiniciar** el servidor — el archivo se lee en cada consulta.
+
+### Formato del archivo:
+
+```
+=== NOMBRE DE SECCIÓN ===
+
+PROBLEMA: Descripción del problema
+SOLUCIÓN:
+1. Paso uno
+2. Paso dos
+
+PREGUNTA: ¿Cómo hago algo?
+RESPUESTA: Explicación de cómo hacerlo.
+```
