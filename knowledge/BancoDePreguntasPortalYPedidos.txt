@@ -89,6 +89,17 @@ CAUSA: Error en el despacho donde se envió un producto adicional que no corresp
 4. Verificar asociación: La devolución quedará automáticamente asociada a la factura (formato: CPFE-XXXXXX). Confirmar que la solicitud se haya creado correctamente.
 NOTA: Este proceso aplica únicamente para productos recibidos por error que no fueron solicitados ni facturados.
 
+PROBLEMA: Rechazar o Eliminar Devolución aprobada por coordinador pero el cliente se equivocó de referencia
+SOLUCIÓN:
+CAUSA: El cliente reporta que la referencia incluida en la devolución aprobada no es la correcta. Una vez aprobada por el coordinador, la devolución debe ser rechazada o eliminada por el Centro de Partes.
+1. Solicitar rechazo al Centro de Partes: En el chat de devoluciones, etiquetar a los siguientes correos:
+   - pabetancur@incolmotos-yamaha.com.co
+   - recepcionalmacen@incolmotos-yamaha.com.co
+2. Solicitar que rechacen la devolución indicando el motivo (referencia incorrecta).
+3. IMPORTANTE: Adjuntar el número de la devolución en el mensaje.
+4. Una vez rechazada, el cliente podrá crear una nueva solicitud de devolución con la referencia correcta.
+NOTA: Este proceso es necesario porque una vez aprobada por el coordinador, solo el Centro de Partes tiene permisos para rechazar o eliminar la devolución.
+
 === PORTAL YAMAHA ===
 
 PROBLEMA: Usuario no aparece en el filtro de búsqueda de Portal Yamaha

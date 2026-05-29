@@ -7,7 +7,7 @@ export default function RightPanel({ knowledgeStatus }) {
   const [likedQuote, setLikedQuote] = React.useState(false);
 
   return (
-    <aside className="w-67.5 shrink-0 flex flex-col gap-2.5 py-4 px-3.5 overflow-y-auto bg-(--bg-panel) backdrop-blur-2xl border-l border-(--border) relative">
+    <aside className="w-67.5 shrink-0 flex flex-col gap-2.5 py-4 px-3.5 overflow-hidden bg-(--bg-panel) backdrop-blur-2xl border-l border-(--border) relative">
       {/* Blob decorativo */}
       <div
         className="absolute w-50 h-50 rounded-full pointer-events-none -top-15 -right-15"
