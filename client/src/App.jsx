@@ -9,7 +9,7 @@ import RightPanel from './components/RightPanel.jsx';
  * Tipografía: Source Sans 3 (cargada en index.css)
  */
 export default function App() {
-  const [activeNav, setActiveNav] = useState('chat');
+  const [activeNav, setActiveNav] = useState('banco-preguntas');
   const [knowledgeStatus, setKnowledgeStatus] = useState(null);
 
   useEffect(() => {
@@ -59,8 +59,23 @@ export default function App() {
 
       <div className="relative z-10 flex h-screen overflow-hidden pt-[3px]">
         <Sidebar active={activeNav} onNav={setActiveNav} />
-        <ChatPanel />
-        <RightPanel knowledgeStatus={knowledgeStatus} />
+        {activeNav === 'banco-preguntas' && (
+          <>
+            <ChatPanel />
+            <RightPanel knowledgeStatus={knowledgeStatus} />
+          </>
+        )}
+        {activeNav === 'modulo-2' && (
+          <div className="flex-1 flex items-center justify-center bg-(--bg-deep)">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(10,45,130,0.08)' }}>
+                <div className="w-8 h-1 rounded-full bg-[#0a2d82] opacity-30" />
+              </div>
+              <div className="text-lg font-semibold text-(--text-primary)">Módulo 2</div>
+              <div className="text-sm text-(--text-secondary) mt-1">Próximamente</div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
