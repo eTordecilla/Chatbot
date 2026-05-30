@@ -1,13 +1,15 @@
 import React from "react";
-import { LayoutGrid } from "lucide-react";
-import { faComments } from "@fortawesome/free-solid-svg-icons";
+import { faComments, faFileLines } from "@fortawesome/free-solid-svg-icons";
 import yamahaLogo from "../assets/incolmotos.svg";
 
 function CommentsGradientIcon() {
   const [w, h, , , d] = faComments.icon;
   const path = Array.isArray(d) ? d.join(" ") : d;
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} style={{ width: 18, height: 18, flexShrink: 0 }}>
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      style={{ width: 18, height: 18, flexShrink: 0 }}
+    >
       <defs>
         <linearGradient id="yamaha-grad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#0a2d82" />
@@ -19,13 +21,36 @@ function CommentsGradientIcon() {
   );
 }
 
+function FileLinesGradientIcon() {
+  const [w, h, , , d] = faFileLines.icon;
+  const path = Array.isArray(d) ? d.join(" ") : d;
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      style={{ width: 18, height: 18, flexShrink: 0 }}
+    >
+      <defs>
+        <linearGradient id="file-lines-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#0a2d82" />
+          <stop offset="100%" stopColor="#6b8fd4" />
+        </linearGradient>
+      </defs>
+      <path d={path} fill="url(#file-lines-grad)" />
+    </svg>
+  );
+}
+
 const navItems = [
   {
     renderIcon: () => <CommentsGradientIcon />,
     label: "Soporte Pedidos y Portal Yamaha",
     id: "banco-preguntas",
   },
-  { icon: LayoutGrid, label: "Módulo 2", id: "modulo-2" },
+  {
+    renderIcon: () => <FileLinesGradientIcon />,
+    label: "Manuales y Procedimientos Portal",
+    id: "modulo-2",
+  },
 ];
 
 export default function Sidebar({ active, onNav }) {
