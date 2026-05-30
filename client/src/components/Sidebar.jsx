@@ -1,65 +1,118 @@
-import React from 'react';
-import {
-  MessageCircle, Compass, CheckSquare, Bell,
-  Folder, Clock, Settings, ChevronDown, User
-} from 'lucide-react';
-import yamahaLogo from '../assets/incolmotos.svg';
+import React from "react";
+import { faComments, faFileLines } from "@fortawesome/free-solid-svg-icons";
+import yamahaLogo from "../assets/incolmotos.svg";
+
+function CommentsGradientIcon() {
+  const [w, h, , , d] = faComments.icon;
+  const path = Array.isArray(d) ? d.join(" ") : d;
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      style={{ width: 18, height: 18, flexShrink: 0 }}
+    >
+      <defs>
+        <linearGradient id="yamaha-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#0a2d82" />
+          <stop offset="100%" stopColor="#ff0000" />
+        </linearGradient>
+      </defs>
+      <path d={path} fill="url(#yamaha-grad)" />
+    </svg>
+  );
+}
+
+function FileLinesGradientIcon() {
+  const [w, h, , , d] = faFileLines.icon;
+  const path = Array.isArray(d) ? d.join(" ") : d;
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      style={{ width: 18, height: 18, flexShrink: 0 }}
+    >
+      <defs>
+        <linearGradient id="file-lines-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#0a2d82" />
+          <stop offset="100%" stopColor="#6b8fd4" />
+        </linearGradient>
+      </defs>
+      <path d={path} fill="url(#file-lines-grad)" />
+    </svg>
+  );
+}
 
 const navItems = [
-  { icon: MessageCircle, label: 'Chat',          id: 'chat' },
-  { icon: Compass,       label: 'Descubre',      id: 'discover' },
-  { icon: CheckSquare,   label: 'Tareas',        id: 'tasks' },
-  { icon: Bell,          label: 'Recordatorios', id: 'reminders' },
-  { icon: Folder,        label: 'Archivos',      id: 'files' },
-  { icon: Clock,         label: 'Historial',     id: 'history' },
-  { icon: Settings,      label: 'Ajustes',       id: 'settings' },
+  {
+    renderIcon: () => <CommentsGradientIcon />,
+    label: "Soporte Pedidos y Portal Yamaha",
+    id: "banco-preguntas",
+  },
+  {
+    renderIcon: () => <FileLinesGradientIcon />,
+    label: "Manuales y Procedimientos Portal",
+    id: "modulo-2",
+  },
 ];
 
 export default function Sidebar({ active, onNav }) {
   return (
     <aside className="w-[220px] shrink-0 bg-(--bg-panel) backdrop-blur-2xl border-r border-(--border) flex flex-col pb-5 px-3 relative overflow-hidden">
-
       {/* Blob decorativo */}
-      <div className="absolute w-[200px] h-[200px] rounded-full pointer-events-none -bottom-[60px] -left-[60px]"
-           style={{ background: 'radial-gradient(circle, rgba(79,126,255,0.15) 0%, transparent 70%)' }} />      {/* Bot */}
-      <div className="flex flex-col items-center justify-center gap-2.5 mb-7 py-6 px-3 -mx-3 -mt-3 border-b border-blue-900" style={{ backgroundColor: '#0a2d82' }}>
-        <div className="w-16 h-16 rounded-full border-2 border-white flex items-center justify-center bg-white p-2"
-             style={{
-               boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
-             }}>
-          <img src={yamahaLogo} alt="Yamaha" className="w-full h-full object-contain" />
+      <div
+        className="absolute w-[200px] h-[200px] rounded-full pointer-events-none -bottom-[60px] -left-[60px]"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(79,126,255,0.15) 0%, transparent 70%)",
+        }}
+      />{" "}
+      {/* Bot */}
+      <div
+        className="flex flex-col items-center justify-center gap-2.5 mb-7 py-6 px-3 -mx-3 -mt-3 border-b border-blue-900"
+        style={{ backgroundColor: "#0a2d82" }}
+      >
+        <div
+          className="w-16 h-16 rounded-full border-2 border-white flex items-center justify-center bg-white p-2"
+          style={{
+            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)",
+          }}
+        >
+          <img
+            src={yamahaLogo}
+            alt="Yamaha"
+            className="w-full h-full object-contain"
+          />
         </div>
         <div>
-          <div className="text-sm font-semibold text-white text-center">Asistente ✨</div>
-          <div className="text-[11px] text-white text-center">Yamaha Support</div>
+          <div className="text-sm font-semibold text-white text-center">
+            Asistente ✨
+          </div>
+          <div className="text-[11px] text-white text-center">
+            Yamaha Support
+          </div>
         </div>
       </div>
-
       {/* Nav */}
       <nav className="flex-1 flex flex-col gap-0.5">
-        {navItems.map(({ icon: Icon, label, id }) => (
+        {navItems.map(({ icon: Icon, renderIcon, label, id }) => (
           <button
             key={id}
             onClick={() => onNav(id)}
             className={[
-              'flex items-center gap-2.5 py-2.5 rounded-[10px] text-sm transition-all duration-150 text-left w-full cursor-pointer border-none',
+              "flex items-center gap-2.5 py-2.5 rounded-[10px] text-sm transition-all duration-150 text-left w-full cursor-pointer border-none",
               active === id
-                ? 'bg-gradient-to-r from-[rgba(79,126,255,0.25)] to-[rgba(124,92,255,0.15)] text-(--text-primary) border-l-2 border-(--accent) pl-2.5 pr-3'
-                : 'text-(--text-secondary) px-3',
-            ].join(' ')}
+                ? "bg-gradient-to-r from-[rgba(79,126,255,0.25)] to-[rgba(124,92,255,0.15)] text-(--text-primary) border-l-2 border-(--accent) pl-2.5 pr-3"
+                : "text-(--text-secondary) px-3",
+            ].join(" ")}
           >
-            <Icon size={18} strokeWidth={1.8} />
+            {renderIcon ? renderIcon() : <Icon size={18} strokeWidth={1.8} />}
             <span>{label}</span>
           </button>
         ))}
-      </nav>    
+      </nav>
       {/* Usuario */}
-      <div
-        className="flex items-center gap-2 p-2.5 rounded-[10px] bg-[#dce3eb] border border-(--border) mt-2 w-full cursor-pointer hover:bg-[#d0d8e5] transition-colors"
-      >
+      <div className="flex items-center gap-2 p-2.5 rounded-[10px] bg-[#dce3eb] border border-(--border) mt-2 w-full cursor-pointer hover:bg-[#d0d8e5] transition-colors">
         <svg
           className="w-6 h-6 shrink-0"
-          style={{ color: '#ff0000' }}
+          style={{ color: "#ff0000" }}
           focusable="false"
           aria-hidden="true"
           viewBox="0 0 24 24"
