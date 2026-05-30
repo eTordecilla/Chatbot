@@ -5,11 +5,15 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
+    "start": "node --max-old-space-size=2048 index.js",
+    "dev": "node --watch --max-old-space-size=2048 index.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
     "cors": "^2.8.5",
-    "express": "^4.21.0"
+    "dotenv": "^17.4.2",
+    "express": "^4.21.0",
+    "mammoth": "^1.12.0",
+    "multer": "^2.1.1"
   }
 }
