@@ -3,3 +3,5 @@ pnpm-lock.yaml
 .env
 .DS_Store
 dist/
+knowledge/rag-index*.json
+lancedb-data/

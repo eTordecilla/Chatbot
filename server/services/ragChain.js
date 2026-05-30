@@ -64,8 +64,8 @@ async function callLLM(provider, context, question) {
   return completion.choices[0].message.content;
 }
 
-export async function answerQuestion(question) {
-  const chunks = await queryDocuments(question, 5);
+export async function answerQuestion(question, collection = "manuales") {
+  const chunks = await queryDocuments(question, 5, collection);
 
   if (!chunks.length) {
     return {
@@ -83,7 +83,7 @@ export async function answerQuestion(question) {
   const provider = getProvider();
 
   const answer = await callLLM(provider, context, question);
-  console.log(`  [RAG] proveedor: ${provider} | fragmentos: ${chunks.length}`);
+  console.log(`  [RAG] colección: ${collection} | proveedor: ${provider} | fragmentos: ${chunks.length}`);
 
   return { answer, sources, chunksUsed: chunks.length };
 }

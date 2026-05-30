@@ -13,86 +13,88 @@ import {
 import { answerQuestion } from "../services/ragChain.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const MANUALES_DIR = path.resolve(__dirname, "../../knowledge/manuales");
+const KNOWLEDGE_DIR = path.resolve(__dirname, "../../knowledge");
 
-if (!fs.existsSync(MANUALES_DIR))
-  fs.mkdirSync(MANUALES_DIR, { recursive: true });
+// Directorios por colección
+function docsDir(collection) {
+  const dir = path.join(KNOWLEDGE_DIR, collection === "soporte" ? "soporte" : "manuales");
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
 
-const storage = multer.diskStorage({
-  destination: MANUALES_DIR,
-  filename: (_req, file, cb) => {
-    // Preservar nombre original decodificando correctamente
-    const name = Buffer.from(file.originalname, "latin1").toString("utf8");
-    cb(null, name);
-  },
-});
-
-const upload = multer({
-  storage,
-  fileFilter: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if ([".pdf", ".docx"].includes(ext)) cb(null, true);
-    else cb(new Error(`Solo se aceptan archivos .pdf y .docx`), false);
-  },
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB por archivo
-});
+function makeUpload(collection) {
+  return multer({
+    storage: multer.diskStorage({
+      destination: docsDir(collection),
+      filename: (_req, file, cb) => {
+        cb(null, Buffer.from(file.originalname, "latin1").toString("utf8"));
+      },
+    }),
+    fileFilter: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      [".pdf", ".docx"].includes(ext) ? cb(null, true) : cb(new Error("Solo .pdf y .docx"));
+    },
+    limits: { fileSize: 50 * 1024 * 1024 },
+  });
+}
 
 const router = Router();
 
-// GET /api/rag/status — estado del sistema
-router.get("/status", async (_req, res) => {
-  const stats = await getStats();
-  const files = fs
-    .readdirSync(MANUALES_DIR)
-    .filter((f) => /\.(pdf|docx)$/i.test(f));
-  res.json({ ...stats, files });
+// Extrae la colección del query string (default: manuales)
+function col(req) {
+  return req.query.collection === "soporte" ? "soporte" : "manuales";
+}
+
+// GET /api/rag/status?collection=soporte
+router.get("/status", async (req, res) => {
+  const c = col(req);
+  const stats = await getStats(c);
+  const dir = docsDir(c);
+  const files = fs.readdirSync(dir).filter((f) => /\.(pdf|docx)$/i.test(f));
+  res.json({ ...stats, files, collection: c });
 });
 
-// POST /api/rag/ingest — sube archivos y los indexa
-router.post("/ingest", upload.array("files", 20), async (req, res) => {
+// POST /api/rag/ingest?collection=soporte — sube archivos y los indexa
+router.post("/ingest", (req, res, next) => {
+  const c = col(req);
+  makeUpload(c).array("files", 20)(req, res, next);
+}, async (req, res) => {
+  const c = col(req);
   if (!req.files?.length)
     return res.status(400).json({ error: "No se recibieron archivos" });
 
   const results = [];
   for (const file of req.files) {
     try {
-      // Eliminar chunks anteriores del mismo archivo (re-ingestión limpia)
-      await deleteDocumentBySource(file.filename);
+      await deleteDocumentBySource(file.filename, c);
       const chunks = await parseDocument(file.path);
-      const added = await addDocuments(chunks);
+      const added = await addDocuments(chunks, c);
       results.push({ file: file.filename, chunks: added, status: "ok" });
-      console.log(`✅ Indexado: ${file.filename} (${added} fragmentos)`);
+      console.log(`✅ [${c}] Indexado: ${file.filename} (${added} fragmentos)`);
     } catch (err) {
-      results.push({
-        file: file.filename,
-        error: err.message,
-        status: "error",
-      });
-      console.error(`❌ Error indexando ${file.filename}:`, err.message);
+      results.push({ file: file.filename, error: err.message, status: "error" });
+      console.error(`❌ [${c}] Error indexando ${file.filename}:`, err.message);
     }
   }
   res.json({ results });
 });
 
-// POST /api/rag/ingest-folder — indexa todos los archivos de la carpeta manuales
-router.post("/ingest-folder", async (_req, res) => {
-  const files = fs
-    .readdirSync(MANUALES_DIR)
-    .filter((f) => /\.(pdf|docx)$/i.test(f));
+// POST /api/rag/ingest-folder?collection=soporte
+router.post("/ingest-folder", async (req, res) => {
+  const c = col(req);
+  const dir = docsDir(c);
+  const files = fs.readdirSync(dir).filter((f) => /\.(pdf|docx)$/i.test(f));
   if (!files.length)
-    return res.json({
-      message: "No hay documentos en la carpeta manuales",
-      results: [],
-    });
+    return res.json({ message: "No hay documentos en la carpeta", results: [] });
 
   const results = [];
   for (const file of files) {
     try {
-      await deleteDocumentBySource(file);
-      const chunks = await parseDocument(path.join(MANUALES_DIR, file));
-      const added = await addDocuments(chunks);
+      await deleteDocumentBySource(file, c);
+      const chunks = await parseDocument(path.join(dir, file));
+      const added = await addDocuments(chunks, c);
       results.push({ file, chunks: added, status: "ok" });
-      console.log(`✅ Indexado: ${file} (${added} fragmentos)`);
+      console.log(`✅ [${c}] Indexado: ${file} (${added} fragmentos)`);
     } catch (err) {
       results.push({ file, error: err.message, status: "error" });
     }
@@ -100,30 +102,27 @@ router.post("/ingest-folder", async (_req, res) => {
   res.json({ results });
 });
 
-// POST /api/rag/query — consulta RAG
+// POST /api/rag/query?collection=soporte
 router.post("/query", async (req, res) => {
+  const c = col(req);
   const { question } = req.body;
   if (!question?.trim())
     return res.status(400).json({ error: "La pregunta es requerida" });
 
   try {
-    const result = await answerQuestion(question.trim());
+    const result = await answerQuestion(question.trim(), c);
     res.json(result);
   } catch (err) {
-    console.error("Error en RAG query:", err.message);
-    if (err.message?.includes("ANTHROPIC_API_KEY")) {
-      return res
-        .status(500)
-        .json({ error: "ANTHROPIC_API_KEY no configurada en el servidor." });
-    }
+    console.error(`Error en RAG query [${c}]:`, err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// DELETE /api/rag/index — limpia el índice vectorial
-router.delete("/index", async (_req, res) => {
-  await resetCollection();
-  res.json({ message: "Índice vectorial eliminado correctamente" });
+// DELETE /api/rag/index?collection=soporte
+router.delete("/index", async (req, res) => {
+  const c = col(req);
+  await resetCollection(c);
+  res.json({ message: `Índice [${c}] eliminado correctamente` });
 });
 
 export default router;

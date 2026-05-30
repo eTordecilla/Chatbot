@@ -10,7 +10,9 @@ import ManualesPanel from "./components/ManualesPanel.jsx";
  * Tipografía: Source Sans 3 (cargada en index.css)
  */
 export default function App() {
-  const [activeNav, setActiveNav] = useState("banco-preguntas");
+  const [activeNav, setActiveNav] = useState(
+    () => sessionStorage.getItem("yamaha_active_nav") || "banco-preguntas"
+  );
   const [knowledgeStatus, setKnowledgeStatus] = useState(null);
 
   useEffect(() => {
@@ -67,7 +69,7 @@ export default function App() {
       />
 
       <div className="relative z-10 flex h-screen overflow-hidden pt-[3px]">
-        <Sidebar active={activeNav} onNav={setActiveNav} />
+        <Sidebar active={activeNav} onNav={id => { setActiveNav(id); sessionStorage.setItem("yamaha_active_nav", id); }} />
         {activeNav === "banco-preguntas" && (
           <>
             <ChatPanel />

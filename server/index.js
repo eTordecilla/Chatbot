@@ -250,9 +250,60 @@ app.post("/api/chat", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(
     `\n🚀 Servidor Yamaha Chatbot corriendo en http://localhost:${PORT}`,
   );
-  console.log(`📂 Base de conocimiento: ${KNOWLEDGE_FILE_PATH}\n`);
+  // Auto-indexar el banco de preguntas en la colección 'soporte' si está vacío
+  await ingestSoporteTxt();
 });
+
+// ── Auto-ingestión del banco de preguntas de soporte ─────────────────────────
+async function ingestSoporteTxt() {
+  const { addDocuments, getStats } = await import("./services/vectorStore.js");
+  const stats = await getStats("soporte");
+  if (stats.chunks > 0) return; // ya indexado
+
+  if (!fs.existsSync(KNOWLEDGE_FILE_PATH)) return;
+
+  const text = fs.readFileSync(KNOWLEDGE_FILE_PATH, "utf-8");
+  const chunks = parseSoporteTxt(text);
+  if (!chunks.length) return;
+
+  await addDocuments(chunks, "soporte");
+  console.log(`✅ Banco de preguntas indexado en colección 'soporte' (${chunks.length} fragmentos)`);
+}
+
+// Convierte el archivo Q&A a chunks: cada par PROBLEMA/SOLUCIÓN o PREGUNTA/RESPUESTA es un chunk
+function parseSoporteTxt(text) {
+  const chunks = [];
+  const lines = text.split("\n");
+  let question = null;
+  let answerLines = [];
+  let chunkIndex = 0;
+
+  const flush = () => {
+    if (question && answerLines.length) {
+      const chunkText = `${question}\n${answerLines.join("\n").trim()}`;
+      chunks.push({ text: chunkText, source: "BancoDePreguntasPortalYPedidos.txt", chunkIndex: chunkIndex++ });
+    }
+    question = null;
+    answerLines = [];
+  };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (line.startsWith("PROBLEMA:") || line.startsWith("PREGUNTA:")) {
+      flush();
+      question = line;
+    } else if (line.startsWith("SOLUCIÓN:") || line.startsWith("RESPUESTA:")) {
+      answerLines = [line];
+    } else if (answerLines.length && line && !line.startsWith("===") && !line.startsWith("#")) {
+      answerLines.push(line);
+    } else if (line === "" && answerLines.length) {
+      flush();
+    }
+  }
+  flush();
+  return chunks;
+}

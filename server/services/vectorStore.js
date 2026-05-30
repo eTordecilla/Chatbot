@@ -3,7 +3,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const INDEX_PATH = path.resolve(__dirname, "../../knowledge/rag-index.json");
+const KNOWLEDGE_DIR = path.resolve(__dirname, "../../knowledge");
+
+function indexPath(collection) {
+  return path.resolve(KNOWLEDGE_DIR, `rag-index-${collection}.json`);
+}
 
 // ── Tokenización española ────────────────────────────────────────────────────
 const STOPWORDS = new Set([
@@ -164,61 +168,61 @@ class BM25Index {
   }
 }
 
-// ── Persistencia ─────────────────────────────────────────────────────────────
-let _index = null;
+// ── Persistencia multi-colección ─────────────────────────────────────────────
+const _indexes = {};
 
-function loadIndex() {
-  if (_index) return _index;
-  if (fs.existsSync(INDEX_PATH)) {
+function loadIndex(collection = "manuales") {
+  if (_indexes[collection]) return _indexes[collection];
+  const fp = indexPath(collection);
+  if (fs.existsSync(fp)) {
     try {
-      _index = BM25Index.fromJSON(
-        JSON.parse(fs.readFileSync(INDEX_PATH, "utf-8")),
-      );
-      console.log(`✅ Índice BM25 cargado (${_index.docs.length} fragmentos)`);
+      _indexes[collection] = BM25Index.fromJSON(JSON.parse(fs.readFileSync(fp, "utf-8")));
+      console.log(`✅ Índice [${collection}] cargado (${_indexes[collection].docs.length} fragmentos)`);
     } catch {
-      _index = new BM25Index();
+      _indexes[collection] = new BM25Index();
     }
   } else {
-    _index = new BM25Index();
+    _indexes[collection] = new BM25Index();
   }
-  return _index;
+  return _indexes[collection];
 }
 
-function saveIndex() {
-  fs.mkdirSync(path.dirname(INDEX_PATH), { recursive: true });
-  fs.writeFileSync(INDEX_PATH, JSON.stringify(loadIndex().toJSON()), "utf-8");
+function saveIndex(collection = "manuales") {
+  fs.mkdirSync(KNOWLEDGE_DIR, { recursive: true });
+  fs.writeFileSync(indexPath(collection), JSON.stringify(loadIndex(collection).toJSON()), "utf-8");
 }
 
-// ── API pública (misma interfaz que antes) ───────────────────────────────────
+// ── API pública ───────────────────────────────────────────────────────────────
 
-export async function addDocuments(chunks) {
+export async function addDocuments(chunks, collection = "manuales") {
   if (!chunks.length) return 0;
-  const idx = loadIndex();
+  const idx = loadIndex(collection);
   idx.addChunks(chunks);
-  saveIndex();
+  saveIndex(collection);
   return chunks.length;
 }
 
-export async function queryDocuments(queryText, nResults = 5) {
-  return loadIndex().search(queryText, nResults);
+export async function queryDocuments(queryText, nResults = 5, collection = "manuales") {
+  return loadIndex(collection).search(queryText, nResults);
 }
 
-export async function deleteDocumentBySource(source) {
-  const idx = loadIndex();
+export async function deleteDocumentBySource(source, collection = "manuales") {
+  const idx = loadIndex(collection);
   idx.removeBySource(source);
-  saveIndex();
+  saveIndex(collection);
 }
 
-export async function getStats() {
+export async function getStats(collection = "manuales") {
   try {
-    const idx = loadIndex();
+    const idx = loadIndex(collection);
     return { connected: true, chunks: idx.docs.length };
   } catch (err) {
     return { connected: false, chunks: 0, error: err.message };
   }
 }
 
-export async function resetCollection() {
-  _index = new BM25Index();
-  if (fs.existsSync(INDEX_PATH)) fs.unlinkSync(INDEX_PATH);
+export async function resetCollection(collection = "manuales") {
+  _indexes[collection] = new BM25Index();
+  const fp = indexPath(collection);
+  if (fs.existsSync(fp)) fs.unlinkSync(fp);
 }

@@ -67,6 +67,15 @@ function Message({ msg }) {
         ) : (
           <div className="bg-(--bg-card) backdrop-blur-md border border-(--border) rounded-[16px_16px_16px_4px] px-3.5 py-2.5 text-sm leading-[1.65] text-(--text-primary)">
             {msg.typing ? <TypingDots /> : <span dangerouslySetInnerHTML={{ __html: formatted }} />}
+            {msg.sources?.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-(--border)">
+                {msg.sources.map(s => (
+                  <span key={s} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border" style={{ background: 'rgba(10,45,130,0.06)', borderColor: 'rgba(10,45,130,0.2)', color: '#0a2d82' }}>
+                    📄 {s}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
         {!msg.typing && (
@@ -101,12 +110,6 @@ export default function ChatPanel() {
   const [messages, setMessages] = useSessionMessages('yamaha_chat_messages', INITIAL_CHAT_MSG);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [history, setHistory] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem('yamaha_chat_history');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -114,42 +117,38 @@ export default function ChatPanel() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  useEffect(() => {
-    try { sessionStorage.setItem('yamaha_chat_history', JSON.stringify(history)); } catch { /* ignore */ }
-  }, [history]);
-
   async function sendMessage(text) {
     const msg = (text || input).trim();
     if (!msg || loading) return;
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = '44px';
 
-    setMessages(prev => [...prev, { role: 'user', content: msg, time: formatTime(new Date()) }]);
-    setMessages(prev => [...prev, { role: 'assistant', content: '', typing: true, time: '' }]);
+    setMessages(prev => [...prev,
+      { role: 'user', content: msg, time: formatTime(new Date()) },
+      { role: 'assistant', content: '', typing: true, time: '', sources: [] },
+    ]);
     setLoading(true);
 
-    const newHistory = [...history, { role: 'user', content: msg }];
-
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/rag/query?collection=soporte', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, history }),
+        body: JSON.stringify({ question: msg }),
       });
       const data = await res.json();
-      const reply = data.reply || 'Lo siento, no pude procesar tu consulta.';
+      const reply = data.error ? `⚠️ ${data.error}` : (data.answer || 'Lo siento, no pude procesar tu consulta.');
       setMessages(prev => {
         const next = [...prev];
-        next[next.length - 1] = { role: 'assistant', content: reply, time: formatTime(new Date()) };
+        next[next.length - 1] = { role: 'assistant', content: reply, sources: data.sources || [], time: formatTime(new Date()) };
         return next;
       });
-      setHistory([...newHistory, { role: 'assistant', content: reply }]);
     } catch {
       setMessages(prev => {
         const next = [...prev];
         next[next.length - 1] = {
           role: 'assistant',
           content: '⚠️ No se pudo conectar con el servidor. Asegúrate de que el backend esté corriendo en el puerto 3001.',
+          sources: [],
           time: formatTime(new Date()),
         };
         return next;
