@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
 import RightPanel from "./components/RightPanel.jsx";
+import ManualesPanel from "./components/ManualesPanel.jsx";
 
 /**
  * App raíz – tema Yamaha corporativo
@@ -9,7 +10,9 @@ import RightPanel from "./components/RightPanel.jsx";
  * Tipografía: Source Sans 3 (cargada en index.css)
  */
 export default function App() {
-  const [activeNav, setActiveNav] = useState("banco-preguntas");
+  const [activeNav, setActiveNav] = useState(
+    () => sessionStorage.getItem("yamaha_active_nav") || "banco-preguntas"
+  );
   const [knowledgeStatus, setKnowledgeStatus] = useState(null);
 
   useEffect(() => {
@@ -66,31 +69,14 @@ export default function App() {
       />
 
       <div className="relative z-10 flex h-screen overflow-hidden pt-[3px]">
-        <Sidebar active={activeNav} onNav={setActiveNav} />
+        <Sidebar active={activeNav} onNav={id => { setActiveNav(id); sessionStorage.setItem("yamaha_active_nav", id); }} />
         {activeNav === "banco-preguntas" && (
           <>
             <ChatPanel />
             <RightPanel knowledgeStatus={knowledgeStatus} />
           </>
         )}
-        {activeNav === "modulo-2" && (
-          <div className="flex-1 flex items-center justify-center bg-(--bg-deep)">
-            <div className="text-center">
-              <div
-                className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
-                style={{ background: "rgba(10,45,130,0.08)" }}
-              >
-                <div className="w-8 h-1 rounded-full bg-[#0a2d82] opacity-30" />
-              </div>
-              <div className="text-lg font-semibold text-(--text-primary)">
-                Manuales y Procedimientos Portal
-              </div>
-              <div className="text-sm text-(--text-secondary) mt-1">
-                Próximamente
-              </div>
-            </div>
-          </div>
-        )}
+        {activeNav === "modulo-2" && <ManualesPanel />}
       </div>
     </>
   );
