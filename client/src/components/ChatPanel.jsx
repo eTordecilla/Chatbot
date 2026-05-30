@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, Volume2, MoreHorizontal } from 'lucide-react';
+import { useSessionMessages } from '../hooks/useSessionChat.js';
 
 const QUICK_CHIPS = [
   '¿Cómo inicio sesión?',
@@ -90,21 +91,32 @@ function formatTime(d) {
   return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
 }
 
+const INITIAL_CHAT_MSG = [{
+  role: 'assistant',
+  content: '¡Hola! Soy tu asistente de soporte de **Portal Yamaha** y **Pedidos Yamaha**. ¿En qué puedo ayudarte hoy?',
+  time: formatTime(new Date()),
+}];
+
 export default function ChatPanel() {
-  const [messages, setMessages] = useState([{
-    role: 'assistant',
-    content: '¡Hola! Soy tu asistente de soporte de **Portal Yamaha** y **Pedidos Yamaha**. ¿En qué puedo ayudarte hoy?',
-    time: formatTime(new Date()),
-  }]);
+  const [messages, setMessages] = useSessionMessages('yamaha_chat_messages', INITIAL_CHAT_MSG);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('yamaha_chat_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    try { sessionStorage.setItem('yamaha_chat_history', JSON.stringify(history)); } catch { /* ignore */ }
+  }, [history]);
 
   async function sendMessage(text) {
     const msg = (text || input).trim();

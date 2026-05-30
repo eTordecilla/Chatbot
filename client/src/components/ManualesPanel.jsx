@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Upload, Trash2, FileText, RefreshCw, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { useSessionMessages } from '../hooks/useSessionChat.js';
 
 function BotAvatar({ size = 34 }) {
   return (
@@ -196,13 +197,15 @@ const QUICK_CHIPS = [
   '¿Cuáles son los tiempos de respuesta?',
 ];
 
+const INITIAL_MANUALES_MSG = [{
+  role: 'assistant',
+  content: '¡Hola! Soy tu asistente de **Manuales y Procedimientos**. Puedo responder preguntas sobre los documentos indexados. Sube tus PDFs o DOCX para comenzar.',
+  time: formatTime(new Date()),
+  sources: [],
+}];
+
 export default function ManualesPanel() {
-  const [messages, setMessages] = useState([{
-    role: 'assistant',
-    content: '¡Hola! Soy tu asistente de **Manuales y Procedimientos**. Puedo responder preguntas sobre los documentos indexados. Sube tus PDFs o DOCX para comenzar.',
-    time: formatTime(new Date()),
-    sources: [],
-  }]);
+  const [messages, setMessages] = useSessionMessages('yamaha_manuales_messages', INITIAL_MANUALES_MSG);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
