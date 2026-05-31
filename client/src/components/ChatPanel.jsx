@@ -101,6 +101,7 @@ function formatTime(d) {
 }
 
 const INITIAL_CHAT_MSG = [{
+  id: 'init-soporte',
   role: 'assistant',
   content: '¡Hola! Soy tu asistente de soporte de **Portal Yamaha** y **Pedidos Yamaha**. ¿En qué puedo ayudarte hoy?',
   time: formatTime(new Date()),
@@ -124,8 +125,8 @@ export default function ChatPanel() {
     if (textareaRef.current) textareaRef.current.style.height = '44px';
 
     setMessages(prev => [...prev,
-      { role: 'user', content: msg, time: formatTime(new Date()) },
-      { role: 'assistant', content: '', typing: true, time: '', sources: [] },
+      { id: crypto.randomUUID(), role: 'user', content: msg, time: formatTime(new Date()) },
+      { id: crypto.randomUUID(), role: 'assistant', content: '', typing: true, time: '', sources: [] },
     ]);
     setLoading(true);
 
@@ -180,7 +181,7 @@ export default function ChatPanel() {
 
       {/* Mensajes */}
       <div className="flex-1 overflow-y-auto px-5 pt-5 pb-3 flex flex-col gap-3.5">
-        {messages.map((m, i) => <Message key={i} msg={m} />)}
+        {messages.map((m, i) => <Message key={m.id ?? i} msg={m} />)}
         <div ref={bottomRef} />
       </div>
 

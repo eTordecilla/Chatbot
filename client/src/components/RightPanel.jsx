@@ -34,18 +34,23 @@ export default function RightPanel({ knowledgeStatus }) {
   const [weatherError, setWeatherError] = React.useState(false);
 
   React.useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
+
     function fetchWeather(lat, lon) {
       fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`,
+        { signal }
       )
         .then((r) => r.json())
         .then((data) => setWeather(data))
-        .catch(() => setWeatherError(true));
+        .catch((err) => { if (err.name !== "AbortError") setWeatherError(true); });
     }
 
     function fetchCity(lat, lon) {
       fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=es`
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=es`,
+        { signal }
       )
         .then((r) => r.json())
         .then((data) => {
@@ -62,7 +67,7 @@ export default function RightPanel({ knowledgeStatus }) {
 
     if (!navigator.geolocation) {
       fetchWeather(6.25, -75.56);
-      return;
+      return () => controller.abort();
     }
 
     navigator.geolocation.getCurrentPosition(
@@ -76,6 +81,8 @@ export default function RightPanel({ knowledgeStatus }) {
         setCityName("Medellín");
       }
     );
+
+    return () => controller.abort();
   }, []);
 
   return (
@@ -97,10 +104,7 @@ export default function RightPanel({ knowledgeStatus }) {
             Base de Conocimiento
           </span>
           <div
-            className="w-1.75 h-1.75 rounded-full"
-            style={{
-              background: knowledgeStatus?.exists ? "#22c55e" : "#ef4444",
-            }}
+            className={`w-1.75 h-1.75 rounded-full ${knowledgeStatus?.exists ? "bg-green-500" : "bg-red-500"}`}
           />
         </div>
         <div className="flex flex-wrap gap-1.5">
