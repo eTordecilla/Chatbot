@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import ragRouter from "./routes/rag.js";
+import { tokenize } from "./utils/normalize.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -59,86 +60,24 @@ function parseKnowledgeBase(text) {
   return blocks;
 }
 
-// ── Normalización de texto ──────────────────────────────────────────────────
-const STOPWORDS = new Set([
-  "el",
-  "la",
-  "los",
-  "las",
-  "un",
-  "una",
-  "unos",
-  "unas",
-  "de",
-  "del",
-  "al",
-  "en",
-  "con",
-  "por",
-  "para",
-  "que",
-  "qué",
-  "cómo",
-  "como",
-  "cuando",
-  "cuándo",
-  "es",
-  "son",
-  "está",
-  "están",
-  "se",
-  "mi",
-  "me",
-  "no",
-  "si",
-  "sí",
-  "y",
-  "o",
-  "a",
-  "e",
-  "i",
-  "u",
-  "hay",
-  "puedo",
-  "puede",
-  "tengo",
-  "tiene",
-  "hacer",
-  "ha",
-  "han",
-  "he",
-  "hemos",
-]);
-
-function normalize(text) {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "") // quitar tildes
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length > 2 && !STOPWORDS.has(w));
-}
-
 // ── Búsqueda por score de palabras compartidas ──────────────────────────────
+// Usa wordSet pre-computado en la caché para lookups O(1) en lugar de O(n)
 function findBestMatch(query, blocks) {
-  const queryWords = new Set(normalize(query));
+  const queryWords = new Set(tokenize(query));
   if (!queryWords.size) return null;
 
   let best = null;
   let bestScore = 0;
 
   for (const block of blocks) {
-    const blockWords = normalize(block.question + " " + block.answer);
     let matches = 0;
     for (const w of queryWords) {
-      if (blockWords.includes(w)) matches++;
+      if (block.wordSet.has(w)) matches++;
     }
-    // score: proporción de palabras de la query que aparecen en el bloque
     const score = matches / queryWords.size;
     if (score > bestScore) {
       bestScore = score;
-      best = { ...block, score };
+      best = { question: block.question, answer: block.answer, score };
     }
   }
   return bestScore >= 0.3 ? best : null;
@@ -178,8 +117,16 @@ function formatResponseWithJson(text) {
   return parts.length > 0 ? parts : [{ type: "text", content: text }];
 }
 
-// ── Carga de base de conocimiento ───────────────────────────────────────────
+// ── Caché de base de conocimiento (evita leer disco en cada request) ─────────
+let _knowledgeCache = null;
+let _knowledgeCacheTime = 0;
+const KNOWLEDGE_CACHE_TTL = 60_000; // 1 minuto
+
 function loadKnowledge() {
+  const now = Date.now();
+  if (_knowledgeCache && now - _knowledgeCacheTime < KNOWLEDGE_CACHE_TTL) {
+    return _knowledgeCache;
+  }
   try {
     if (!fs.existsSync(KNOWLEDGE_FILE_PATH)) {
       console.warn(`⚠️  Archivo no encontrado: ${KNOWLEDGE_FILE_PATH}`);
@@ -187,10 +134,18 @@ function loadKnowledge() {
     }
     const text = fs.readFileSync(KNOWLEDGE_FILE_PATH, "utf-8");
     const blocks = parseKnowledgeBase(text);
+    // Pre-normalizar bloques una sola vez; findBestMatch usa Set para lookups O(1)
+    const normalizedBlocks = blocks.map((b) => ({
+      question: b.question,
+      answer: b.answer,
+      wordSet: new Set(tokenize(b.question + " " + b.answer)),
+    }));
     console.log(
       `✅ Base de conocimiento cargada (${text.length} caracteres, ${blocks.length} entradas)`,
     );
-    return { text, blocks };
+    _knowledgeCache = { text, blocks: normalizedBlocks };
+    _knowledgeCacheTime = now;
+    return _knowledgeCache;
   } catch (err) {
     console.error("Error leyendo base de conocimiento:", err.message);
     return null;

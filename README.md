@@ -1,95 +1,135 @@
-# Chatbot de Soporte Técnico
+# Yamaha Chatbot — Asistente de Soporte Interno
 
-Sistema de soporte técnico interno con interfaz web moderna. Permite a los usuarios consultar soluciones a problemas frecuentes mediante un chatbot que busca respuestas en una base de conocimiento local, sin depender de servicios externos.
+Sistema de soporte técnico interno con interfaz web moderna para Yamaha. Cuenta con dos módulos: un chatbot de soporte que responde preguntas frecuentes del Portal y Pedidos Yamaha, y un asistente de manuales y procedimientos basado en RAG (Retrieval-Augmented Generation) sobre documentos PDF y DOCX.
 
-## Estructura del proyecto
+## Arquitectura
 
 ```
-chatbot/
-├── server/              ← Backend Express (Node.js)
-│   ├── index.js
-│   └── package.json
-├── client/              ← Frontend React + Vite
-│   ├── src/
-│   │   ├── App.jsx
-│   │   ├── components/
-│   │   │   ├── Sidebar.jsx
-│   │   │   ├── ChatPanel.jsx
-│   │   │   └── RightPanel.jsx
-│   │   └── index.css
-│   └── package.json
+yamaha-chatbot/
+├── server/                      ← Backend Express (Node.js ESM)
+│   ├── index.js                 ← Entry point + endpoint /api/chat
+│   ├── routes/
+│   │   └── rag.js               ← Endpoints RAG (ingest, query, status, delete)
+│   ├── services/
+│   │   ├── vectorStore.js       ← Motor BM25 con persistencia JSON
+│   │   ├── ragChain.js          ← Orquestador RAG + LLM (Anthropic / Groq)
+│   │   └── documentParser.js   ← Parseo de PDF (pdfminer) y DOCX (mammoth)
+│   └── utils/
+│       └── normalize.js         ← Tokenizador español compartido
+├── client/                      ← Frontend React 18 + Vite + Tailwind CSS 4
+│   └── src/
+│       ├── App.jsx              ← Raíz + navegación entre módulos
+│       ├── components/
+│       │   ├── Sidebar.jsx
+│       │   ├── ChatPanel.jsx    ← Módulo 1: Soporte Q&A
+│       │   ├── ManualesPanel.jsx← Módulo 2: Manuales RAG
+│       │   └── RightPanel.jsx  ← Panel lateral (estado, clima)
+│       └── hooks/
+│           └── useSessionChat.js← Persistencia de historial en sessionStorage
 ├── knowledge/
-│   └── base.txt         ← Base de conocimiento (editable)
+│   ├── BancoDePreguntasPortalYPedidos.txt ← Base de conocimiento soporte
+│   ├── rag-index-soporte.json   ← Índice BM25 colección soporte (auto-generado)
+│   ├── rag-index-manuales.json  ← Índice BM25 colección manuales (auto-generado)
+│   ├── soporte/                 ← Documentos indexados de soporte
+│   └── manuales/                ← Documentos indexados de manuales
 ├── pnpm-workspace.yaml
 └── package.json
 ```
 
+## Módulos
+
+### Módulo 1 — Soporte Q&A
+Responde preguntas sobre el Portal Yamaha y Pedidos Yamaha usando el archivo `BancoDePreguntasPortalYPedidos.txt`. La búsqueda combina un índice BM25 local con un LLM para generar respuestas contextuales.
+
+### Módulo 2 — Manuales y Procedimientos
+Permite subir documentos PDF y DOCX, indexarlos automáticamente con BM25, y consultarlos en lenguaje natural. El sistema recupera los fragmentos más relevantes y los envía al LLM para generar la respuesta.
+
 ## Requisitos
 
-- [Node.js 18+](https://nodejs.org) — descargar el instalador LTS para Windows
-- [pnpm](https://pnpm.io) — se instala con un solo comando después de Node.js
+- [Node.js 18+](https://nodejs.org)
+- [pnpm](https://pnpm.io)
+- [Python 3](https://python.org) con `pdfminer.six` (para parsear PDFs)
+- API key de [Anthropic](https://console.anthropic.com) o [Groq](https://console.groq.com) (Groq es gratuita)
 
-## Instalación en Windows
+### Instalar pdfminer
 
-### 1. Instalar Node.js
-Descarga e instala la versión LTS desde https://nodejs.org. Marca la opción **"Add to PATH"** durante la instalación.
-
-### 2. Instalar pnpm
-Abre **PowerShell** o **CMD** y ejecuta:
-```powershell
-npm install -g pnpm
+```bash
+pip install pdfminer.six
 ```
 
-Verifica que quedó instalado:
-```powershell
-pnpm --version
-```
+## Instalación
 
-### 3. Clonar o descargar el proyecto
-```powershell
+### 1. Clonar el repositorio
+
+```bash
 git clone https://github.com/eTordecilla/Chatbot.git
 cd Chatbot
 ```
 
-O descarga el ZIP desde GitHub y descomprímelo. Luego abre la terminal dentro de la carpeta del proyecto.
+### 2. Instalar dependencias
 
-### 4. Instalar dependencias
-```powershell
+```bash
 pnpm install
 ```
 
-Esto instala automáticamente las dependencias del servidor y del cliente.
+### 3. Configurar variables de entorno
 
-### 5. Iniciar la aplicación
-```powershell
+Crea el archivo `server/.env`:
+
+```env
+# Al menos una de las dos es requerida
+ANTHROPIC_API_KEY=sk-ant-api03-...
+GROQ_API_KEY=gsk_...
+
+PORT=3001
+```
+
+> Groq ofrece una capa gratuita con el modelo `llama-3.3-70b-versatile`. Si no tienes clave de Anthropic, solo con la de Groq funciona.
+
+### 4. Iniciar la aplicación
+
+```bash
 pnpm dev
 ```
 
-Abre tu navegador en **http://localhost:5173**
+| Servicio | URL |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:3001 |
 
 ## Scripts disponibles
 
 | Comando | Descripción |
 |---|---|
 | `pnpm dev` | Inicia servidor y cliente en modo desarrollo |
-| `pnpm start` | Inicia en modo producción |
-| `pnpm install` | Instala todas las dependencias |
+| `pnpm install` | Instala todas las dependencias del workspace |
 
-## Puertos
+## API REST
 
-| Servicio | URL |
-|---|---|
-| Frontend | http://localhost:5173 |
-| Backend API | http://localhost:3001 |
+### Soporte
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/knowledge-status` | Estado del archivo de conocimiento |
+| `POST` | `/api/chat` | Consulta directa al banco de preguntas |
+
+### RAG
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/rag/status?collection=<col>` | Estado del índice BM25 |
+| `POST` | `/api/rag/ingest?collection=<col>` | Sube e indexa PDFs/DOCX |
+| `POST` | `/api/rag/ingest-folder?collection=<col>` | Indexa toda la carpeta local |
+| `POST` | `/api/rag/query?collection=<col>` | Consulta con RAG + LLM |
+| `DELETE` | `/api/rag/index?collection=<col>` | Limpia el índice |
+
+Colecciones disponibles: `soporte` (default: `manuales`)
 
 ## Base de conocimiento
 
-El archivo de conocimiento está en: **`knowledge/base.txt`**
+El archivo de Q&A está en `knowledge/BancoDePreguntasPortalYPedidos.txt`. Se indexa automáticamente en la colección `soporte` al iniciar el servidor si el índice está vacío.
 
-- Abre el archivo y agrega más contenido al final.
-- **No necesitas reiniciar** el servidor — el archivo se lee en cada consulta.
-
-### Formato del archivo:
+### Formato del archivo
 
 ```
 === NOMBRE DE SECCIÓN ===
@@ -102,3 +142,27 @@ SOLUCIÓN:
 PREGUNTA: ¿Cómo hago algo?
 RESPUESTA: Explicación de cómo hacerlo.
 ```
+
+## Motor de búsqueda BM25
+
+El sistema usa una implementación propia de BM25 (sin dependencias externas de vector store):
+
+- Índices persistidos como JSON en `knowledge/`
+- Tokenización española con lista de stopwords
+- TF pre-computado al momento de indexar (no en cada búsqueda)
+- Actualización incremental de frecuencias de documento
+- Deduplicación por hash MD5 — archivos sin cambios no se re-indexan
+- Dos colecciones independientes: `soporte` y `manuales`
+
+## Tecnologías
+
+| Capa | Tecnología |
+|------|------------|
+| Frontend | React 18, Vite 5, Tailwind CSS 4 |
+| Backend | Node.js (ESM), Express 4 |
+| LLM principal | Anthropic Claude (claude-sonnet-4-6) |
+| LLM alternativo | Groq (llama-3.3-70b-versatile) |
+| Búsqueda | BM25 local con persistencia JSON |
+| Parseo PDF | pdfminer.six (Python) |
+| Parseo DOCX | mammoth |
+| Gestión de paquetes | pnpm workspaces |

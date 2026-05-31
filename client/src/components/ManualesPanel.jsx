@@ -198,6 +198,7 @@ const QUICK_CHIPS = [
 ];
 
 const INITIAL_MANUALES_MSG = [{
+  id: 'init-manuales',
   role: 'assistant',
   content: '¡Hola! Soy tu asistente de **Manuales y Procedimientos**. Puedo responder preguntas sobre los documentos indexados. Sube tus PDFs o DOCX para comenzar.',
   time: formatTime(new Date()),
@@ -280,7 +281,7 @@ export default function ManualesPanel() {
   }
 
   function appendBotMsg(content, sources = []) {
-    setMessages(prev => [...prev, { role: 'assistant', content, sources, time: formatTime(new Date()) }]);
+    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content, sources, time: formatTime(new Date()) }]);
   }
 
   async function sendMessage(text) {
@@ -290,8 +291,8 @@ export default function ManualesPanel() {
     if (textareaRef.current) textareaRef.current.style.height = '44px';
 
     setMessages(prev => [...prev,
-      { role: 'user', content: msg, time: formatTime(new Date()) },
-      { role: 'assistant', content: '', typing: true, time: '', sources: [] },
+      { id: crypto.randomUUID(), role: 'user', content: msg, time: formatTime(new Date()) },
+      { id: crypto.randomUUID(), role: 'assistant', content: '', typing: true, time: '', sources: [] },
     ]);
     setLoading(true);
 
@@ -393,7 +394,7 @@ export default function ManualesPanel() {
 
       {/* Mensajes */}
       <div className="flex-1 overflow-y-auto px-5 pt-5 pb-3 flex flex-col gap-3.5">
-        {messages.map((m, i) => <Message key={i} msg={m} />)}
+        {messages.map((m, i) => <Message key={m.id ?? i} msg={m} />)}
         <div ref={bottomRef} />
       </div>
 

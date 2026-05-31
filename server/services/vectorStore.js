@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { tokenize } from "../utils/normalize.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const KNOWLEDGE_DIR = path.resolve(__dirname, "../../knowledge");
@@ -9,116 +10,62 @@ function indexPath(collection) {
   return path.resolve(KNOWLEDGE_DIR, `rag-index-${collection}.json`);
 }
 
-// ── Tokenización española ────────────────────────────────────────────────────
-const STOPWORDS = new Set([
-  "el",
-  "la",
-  "los",
-  "las",
-  "un",
-  "una",
-  "unos",
-  "unas",
-  "de",
-  "del",
-  "al",
-  "en",
-  "con",
-  "por",
-  "para",
-  "que",
-  "qué",
-  "cómo",
-  "como",
-  "cuando",
-  "es",
-  "son",
-  "está",
-  "están",
-  "se",
-  "no",
-  "si",
-  "sí",
-  "y",
-  "o",
-  "a",
-  "e",
-  "hay",
-  "puede",
-  "tiene",
-  "hacer",
-  "ha",
-  "han",
-  "debe",
-  "deben",
-  "ser",
-  "sus",
-  "este",
-  "esta",
-  "estos",
-  "estas",
-  "ese",
-  "esa",
-  "su",
-  "más",
-  "sin",
-  "sobre",
-  "hasta",
-  "desde",
-  "entre",
-  "cada",
-  "todo",
-  "todos",
-]);
-
-function tokenize(text) {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length > 2 && !STOPWORDS.has(w));
-}
-
 // ── Implementación BM25 ──────────────────────────────────────────────────────
 const K1 = 1.5;
 const B = 0.75;
 
 class BM25Index {
   constructor() {
-    this.docs = []; // { text, source, chunkIndex, tokens }
-    this.df = {}; // frecuencia de documento por término
+    this.docs = [];          // { text, source, chunkIndex, tokens, tf }
+    this.df = {};            // document frequency por término
     this.avgdl = 0;
+    this.totalDocLength = 0;
+    this.sourceHashes = {};  // { source: md5hash } para deduplicación
+  }
+
+  // Actualización incremental: no recalcula todo el índice en cada ingestión
+  addChunks(chunks) {
+    for (const c of chunks) {
+      const tokens = tokenize(c.text);
+      // TF pre-computado al indexar, no en cada búsqueda
+      const tf = {};
+      for (const t of tokens) tf[t] = (tf[t] || 0) + 1;
+
+      this.docs.push({ text: c.text, source: c.source, chunkIndex: c.chunkIndex, tokens, tf });
+
+      for (const t of new Set(tokens)) {
+        this.df[t] = (this.df[t] || 0) + 1;
+      }
+      this.totalDocLength += tokens.length;
+    }
+    this.avgdl = this.docs.length ? this.totalDocLength / this.docs.length : 0;
+  }
+
+  // Necesita recompute completo porque elimina docs del medio
+  removeBySource(source) {
+    this.docs = this.docs.filter((d) => d.source !== source);
+    delete this.sourceHashes[source];
+    this._recomputeStats();
+  }
+
+  getSourceHash(source) {
+    return this.sourceHashes[source] ?? null;
+  }
+
+  setSourceHash(source, hash) {
+    this.sourceHashes[source] = hash;
   }
 
   _recomputeStats() {
     this.df = {};
+    this.totalDocLength = 0;
     for (const doc of this.docs) {
       for (const t of new Set(doc.tokens)) {
         this.df[t] = (this.df[t] || 0) + 1;
       }
+      this.totalDocLength += doc.tokens.length;
     }
-    this.avgdl = this.docs.length
-      ? this.docs.reduce((s, d) => s + d.tokens.length, 0) / this.docs.length
-      : 0;
-  }
-
-  addChunks(chunks) {
-    for (const c of chunks) {
-      this.docs.push({
-        text: c.text,
-        source: c.source,
-        chunkIndex: c.chunkIndex,
-        tokens: tokenize(c.text),
-      });
-    }
-    this._recomputeStats();
-  }
-
-  removeBySource(source) {
-    this.docs = this.docs.filter((d) => d.source !== source);
-    this._recomputeStats();
+    this.avgdl = this.docs.length ? this.totalDocLength / this.docs.length : 0;
   }
 
   search(query, k = 5) {
@@ -127,17 +74,14 @@ class BM25Index {
 
     const N = this.docs.length;
     const scored = this.docs.map((doc) => {
-      const tf = {};
-      for (const t of doc.tokens) tf[t] = (tf[t] || 0) + 1;
-
       let score = 0;
       for (const qt of qTokens) {
         if (!(qt in this.df)) continue;
         const idf = Math.log((N - this.df[qt] + 0.5) / (this.df[qt] + 0.5) + 1);
-        const f = tf[qt] || 0;
+        // Usa TF pre-computado en lugar de recalcular por búsqueda
+        const f = doc.tf?.[qt] || 0;
         const len = doc.tokens.length;
-        const tfn =
-          (f * (K1 + 1)) / (f + K1 * (1 - B + (B * len) / this.avgdl));
+        const tfn = (f * (K1 + 1)) / (f + K1 * (1 - B + (B * len) / this.avgdl));
         score += idf * tfn;
       }
       return score;
@@ -156,7 +100,13 @@ class BM25Index {
   }
 
   toJSON() {
-    return { docs: this.docs, df: this.df, avgdl: this.avgdl };
+    return {
+      docs: this.docs,
+      df: this.df,
+      avgdl: this.avgdl,
+      totalDocLength: this.totalDocLength,
+      sourceHashes: this.sourceHashes,
+    };
   }
 
   static fromJSON(obj) {
@@ -164,6 +114,17 @@ class BM25Index {
     idx.docs = obj.docs || [];
     idx.df = obj.df || {};
     idx.avgdl = obj.avgdl || 0;
+    idx.sourceHashes = obj.sourceHashes || {};
+    idx.totalDocLength =
+      obj.totalDocLength ??
+      idx.docs.reduce((s, d) => s + (d.tokens?.length || 0), 0);
+    // Retrocompatibilidad: reconstruir TF para índices anteriores sin él
+    for (const doc of idx.docs) {
+      if (!doc.tf) {
+        doc.tf = {};
+        for (const t of doc.tokens) doc.tf[t] = (doc.tf[t] || 0) + 1;
+      }
+    }
     return idx;
   }
 }
@@ -194,10 +155,13 @@ function saveIndex(collection = "manuales") {
 
 // ── API pública ───────────────────────────────────────────────────────────────
 
-export async function addDocuments(chunks, collection = "manuales") {
+export async function addDocuments(chunks, collection = "manuales", sourceHash = null) {
   if (!chunks.length) return 0;
   const idx = loadIndex(collection);
   idx.addChunks(chunks);
+  if (sourceHash && chunks.length > 0) {
+    idx.setSourceHash(chunks[0].source, sourceHash);
+  }
   saveIndex(collection);
   return chunks.length;
 }
@@ -225,4 +189,9 @@ export async function resetCollection(collection = "manuales") {
   _indexes[collection] = new BM25Index();
   const fp = indexPath(collection);
   if (fs.existsSync(fp)) fs.unlinkSync(fp);
+}
+
+// Devuelve el hash MD5 almacenado para una fuente, o null si no existe
+export function getDocumentHash(source, collection = "manuales") {
+  return loadIndex(collection).getSourceHash(source);
 }

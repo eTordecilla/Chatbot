@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { createHash } from "crypto";
 import { fileURLToPath } from "url";
 import { parseDocument } from "../services/documentParser.js";
 import {
@@ -9,6 +10,7 @@ import {
   getStats,
   resetCollection,
   deleteDocumentBySource,
+  getDocumentHash,
 } from "../services/vectorStore.js";
 import { answerQuestion } from "../services/ragChain.js";
 
@@ -66,9 +68,19 @@ router.post("/ingest", (req, res, next) => {
   const results = [];
   for (const file of req.files) {
     try {
+      const fileContent = fs.readFileSync(file.path);
+      const hash = createHash("md5").update(fileContent).digest("hex");
+      const existingHash = getDocumentHash(file.filename, c);
+
+      if (existingHash === hash) {
+        results.push({ file: file.filename, status: "skipped", reason: "Sin cambios (mismo contenido)" });
+        console.log(`⏭️  [${c}] Sin cambios: ${file.filename}`);
+        continue;
+      }
+
       await deleteDocumentBySource(file.filename, c);
       const chunks = await parseDocument(file.path);
-      const added = await addDocuments(chunks, c);
+      const added = await addDocuments(chunks, c, hash);
       results.push({ file: file.filename, chunks: added, status: "ok" });
       console.log(`✅ [${c}] Indexado: ${file.filename} (${added} fragmentos)`);
     } catch (err) {
@@ -90,9 +102,19 @@ router.post("/ingest-folder", async (req, res) => {
   const results = [];
   for (const file of files) {
     try {
+      const filePath = path.join(dir, file);
+      const fileContent = fs.readFileSync(filePath);
+      const hash = createHash("md5").update(fileContent).digest("hex");
+      const existingHash = getDocumentHash(file, c);
+
+      if (existingHash === hash) {
+        results.push({ file, status: "skipped", reason: "Sin cambios (mismo contenido)" });
+        continue;
+      }
+
       await deleteDocumentBySource(file, c);
-      const chunks = await parseDocument(path.join(dir, file));
-      const added = await addDocuments(chunks, c);
+      const chunks = await parseDocument(filePath);
+      const added = await addDocuments(chunks, c, hash);
       results.push({ file, chunks: added, status: "ok" });
       console.log(`✅ [${c}] Indexado: ${file} (${added} fragmentos)`);
     } catch (err) {

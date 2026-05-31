@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import Sidebar from "./components/Sidebar.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
 import RightPanel from "./components/RightPanel.jsx";
-import ManualesPanel from "./components/ManualesPanel.jsx";
+
+const ManualesPanel = lazy(() => import("./components/ManualesPanel.jsx"));
 
 /**
  * App raíz – tema Yamaha corporativo
@@ -76,7 +77,15 @@ export default function App() {
             <RightPanel knowledgeStatus={knowledgeStatus} />
           </>
         )}
-        {activeNav === "modulo-2" && <ManualesPanel />}
+        {activeNav === "modulo-2" && (
+          <Suspense fallback={
+            <div className="flex-1 flex items-center justify-center bg-(--bg-deep)">
+              <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#0a2d82', borderTopColor: 'transparent' }} />
+            </div>
+          }>
+            <ManualesPanel />
+          </Suspense>
+        )}
       </div>
     </>
   );
