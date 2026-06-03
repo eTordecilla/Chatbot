@@ -7,3 +7,4 @@ knowledge/rag-index*.json
 knowledge/rag-index.json
 lancedb-data/
 knowledge/manuales/test.pdf
+.claude/

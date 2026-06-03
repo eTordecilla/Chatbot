@@ -34,7 +34,9 @@ function makeUpload(collection) {
     }),
     fileFilter: (_req, file, cb) => {
       const ext = path.extname(file.originalname).toLowerCase();
-      [".pdf", ".docx"].includes(ext) ? cb(null, true) : cb(new Error("Solo .pdf y .docx"));
+      // cb(null, false) descarta el archivo sin escribirlo en disco
+      // y sin abortar el resto del lote (cb(new Error) abortaría todo)
+      cb(null, [".pdf", ".docx"].includes(ext));
     },
     limits: { fileSize: 50 * 1024 * 1024 },
   });
