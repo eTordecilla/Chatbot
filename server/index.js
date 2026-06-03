@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import ragRouter from "./routes/rag.js";
+import manualsRouter from "./routes/manuals.js";
 import { tokenize } from "./utils/normalize.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -13,6 +14,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use("/api/rag", ragRouter);
+app.use("/api", manualsRouter);
 
 const KNOWLEDGE_FILE_PATH = path.resolve(
   __dirname,

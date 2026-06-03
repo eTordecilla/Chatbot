@@ -2,9 +2,70 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { tokenize } from "../utils/normalize.js";
+import { LocalIndex } from "vectra";
+import { pipeline }   from "@xenova/transformers";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname     = path.dirname(fileURLToPath(import.meta.url));
 const KNOWLEDGE_DIR = path.resolve(__dirname, "../../knowledge");
+const VECTOR_DIR    = path.resolve(__dirname, "../../data/vector-index");
+
+// ── Embedder singleton ───────────────────────────────────────────────────────
+let _embedder = null;
+
+async function getEmbedder() {
+  if (!_embedder) {
+    console.log("🔄 Cargando modelo de embeddings (Xenova/all-MiniLM-L6-v2)…");
+    _embedder = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2", { quantized: true });
+    console.log("✅ Modelo de embeddings listo.");
+  }
+  return _embedder;
+}
+
+export async function embed(text) {
+  const fn  = await getEmbedder();
+  const out = await fn(text, { pooling: "mean", normalize: true });
+  return Array.from(out.data);
+}
+
+export async function warmUpEmbedder() {
+  await embed("warm up");
+}
+
+// ── Vectra store ─────────────────────────────────────────────────────────────
+let _vectra = null;
+
+async function getVectraIndex() {
+  if (!_vectra) {
+    _vectra = new LocalIndex(VECTOR_DIR);
+    if (!(await _vectra.isIndexCreated())) {
+      await _vectra.createIndex();
+      console.log("✅ Índice vectorial creado en", VECTOR_DIR);
+    }
+  }
+  return _vectra;
+}
+
+export async function addVectraChunk(text, source, chunkIndex) {
+  const idx    = await getVectraIndex();
+  const vector = await embed(text);
+  await idx.insertItem({ vector, metadata: { text, source, chunkIndex } });
+}
+
+export async function searchVectra(queryText, k = 5) {
+  const idx    = await getVectraIndex();
+  const vector = await embed(queryText);
+  const results = await idx.queryItems(vector, k);
+  return results.map((r) => ({
+    text:   r.item.metadata.text,
+    source: r.item.metadata.source,
+    score:  r.score,
+  }));
+}
+
+export async function getAllVectraItems() {
+  const idx = await getVectraIndex();
+  return idx.listItems();
+}
 
 function indexPath(collection) {
   return path.resolve(KNOWLEDGE_DIR, `rag-index-${collection}.json`);
