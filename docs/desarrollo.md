@@ -129,13 +129,18 @@ const SYSTEM_PROMPT = `Eres un asistente técnico especializado...`;
 
 ### PDF
 
-Usa `python3` con `pdfminer.six` vía `spawnSync`. Se eligió `spawnSync` (bloqueante) intencionalmente para evitar un bug de OOM en Node.js v24 con módulos ESM importados dinámicamente.
+Usa `unpdf`, una librería JavaScript pura que envuelve PDF.js (Mozilla). No requiere Python ni dependencias externas al entorno Node.js.
 
 ```js
-spawnSync("python3", ["-c", script, filePath, tmpFile], { timeout: 30_000 })
+import { extractText } from "unpdf";
+
+const buffer = fs.readFileSync(filePath);
+const { text } = await extractText(new Uint8Array(buffer), { mergePages: true });
 ```
 
-Si el parseo demora más de 30 segundos, lanza error.
+`mergePages: true` concatena el texto de todas las páginas en un único string. Sin esta opción, `text` sería un array de strings (una entrada por página).
+
+> **Nota sobre `UnknownErrorException: standardFontDataUrl`:** esta advertencia puede aparecer en consola para PDFs con fuentes embebidas no estándar. Es inofensiva — la extracción de texto funciona correctamente.
 
 ### DOCX
 
@@ -179,6 +184,30 @@ const ManualesPanel = lazy(() => import("./components/ManualesPanel.jsx"));
   <ManualesPanel />
 </Suspense>
 ```
+
+### Notificación de archivo duplicado (DuplicateToast)
+
+`ManualesPanel` muestra un popup ámbar cuando el servidor retorna `status: "skipped"` para uno o más archivos (mismo contenido ya indexado).
+
+```
+Backend retorna status: "skipped"
+          │
+          ▼
+handleUpload / handleIngestFolder detecta resultados skipped
+          │
+          ▼
+showToast(files[]) → setToast(files)
+          │
+          ▼
+<DuplicateToast> renderiza sobre el panel (absolute, z-50)
+  - Título singular/plural según cantidad
+  - Lista de nombres de archivos omitidos
+  - Botón × para cerrar manualmente
+  - Barra de progreso que se vacía en 4.5 segundos
+  - Auto-cierre tras TOAST_DURATION (4500 ms)
+```
+
+Si en el mismo upload hay archivos nuevos (`ok`) y duplicados (`skipped`), el chat muestra el mensaje de los indexados y el toast aparece solo para los duplicados — sin mezclar ambas cosas.
 
 ### Tema visual
 

@@ -68,9 +68,9 @@ Permite **subir documentos internos** (PDFs, DOCX) y consultarlos en lenguaje na
 1. Haz clic en **"Subir documentos"** (botón esquina superior derecha del panel).
 2. Arrastra los archivos al área de carga, o haz clic para seleccionarlos.
 3. Formatos soportados: `.pdf` y `.docx` (máximo 50 MB por archivo).
-4. El sistema parsea e indexa automáticamente. Al terminar muestra un mensaje con el número de fragmentos indexados.
+4. El sistema parsea e indexa automáticamente. Al terminar muestra un mensaje en el chat con el número de fragmentos indexados.
 
-> Si subes el mismo archivo sin modificaciones, el sistema lo detecta por su hash MD5 y lo omite para no reprocesar.
+**Archivo ya indexado:** si subes un archivo cuyo contenido no ha cambiado, el sistema lo detecta por su hash MD5 y lo omite sin reprocesar. Aparece un **aviso naranja** en la parte superior del panel indicando el nombre del archivo(s) duplicado(s). El aviso se cierra automáticamente a los 4.5 segundos o manualmente con el botón ×.
 
 ### Indexar carpeta completa
 

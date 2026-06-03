@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Upload, Trash2, FileText, RefreshCw, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Send, Upload, Trash2, FileText, RefreshCw, AlertCircle, CheckCircle2, Loader2, X } from 'lucide-react';
 import { useSessionMessages } from '../hooks/useSessionChat.js';
 
 function BotAvatar({ size = 34 }) {
@@ -145,20 +145,26 @@ function StatusBar({ status, onIngestFolder, onReset, loading }) {
   );
 }
 
-function DropZone({ onUpload, uploading }) {
+function DropZone({ onUpload, onInvalidFiles, uploading }) {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef(null);
 
   function handleDrop(e) {
     e.preventDefault();
     setDragging(false);
-    const files = Array.from(e.dataTransfer.files).filter(f => /\.(pdf|docx)$/i.test(f.name));
-    if (files.length) onUpload(files);
+    const all     = Array.from(e.dataTransfer.files);
+    const valid   = all.filter(f =>  /\.(pdf|docx)$/i.test(f.name));
+    const invalid = all.filter(f => !/\.(pdf|docx)$/i.test(f.name));
+    if (invalid.length) onInvalidFiles?.(invalid.map(f => f.name));
+    if (valid.length)   onUpload(valid);
   }
 
   function handleChange(e) {
-    const files = Array.from(e.target.files);
-    if (files.length) onUpload(files);
+    const all     = Array.from(e.target.files);
+    const valid   = all.filter(f =>  /\.(pdf|docx)$/i.test(f.name));
+    const invalid = all.filter(f => !/\.(pdf|docx)$/i.test(f.name));
+    if (invalid.length) onInvalidFiles?.(invalid.map(f => f.name));
+    if (valid.length)   onUpload(valid);
     e.target.value = '';
   }
 
@@ -190,6 +196,103 @@ function formatTime(d) {
   return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
 }
 
+const TOAST_DURATION = 4500;
+
+const TOAST_CSS = `
+  @keyframes toast-in {
+    from { opacity: 0; transform: translate(-50%, -10px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+  @keyframes toast-shrink {
+    from { width: 100%; }
+    to   { width: 0%; }
+  }
+  .toast-enter   { animation: toast-in ${TOAST_DURATION / 1000}s ease-out forwards; }
+  .toast-progress { animation: toast-shrink ${TOAST_DURATION / 1000}s linear forwards; }
+`;
+
+const TOAST_THEMES = {
+  duplicate: {
+    bg: '#fffbeb', border: '#f59e0b', iconBg: '#fef3c7',
+    icon: '#d97706', text: '#92400e', sub: '#b45309',
+    bar: '#fde68a', progress: '#f59e0b',
+  },
+  invalid: {
+    bg: '#fef2f2', border: '#ef4444', iconBg: '#fee2e2',
+    icon: '#dc2626', text: '#7f1d1d', sub: '#991b1b',
+    bar: '#fecaca', progress: '#ef4444',
+  },
+};
+
+const TOAST_CONTENT = {
+  duplicate: {
+    title:  n => n === 1 ? 'Archivo ya indexado'              : `${n} archivos ya indexados`,
+    desc:   n => n === 1 ? 'Este archivo ya existe en el índice y no tiene cambios.'
+                         : 'Estos archivos ya existen en el índice y no tienen cambios.',
+  },
+  invalid: {
+    title:  n => n === 1 ? 'Formato no soportado'             : `${n} archivos con formato no soportado`,
+    desc:   _  => 'Solo se aceptan archivos .pdf y .docx.',
+  },
+};
+
+function FileToast({ type, files, onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, TOAST_DURATION);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  const theme   = TOAST_THEMES[type];
+  const content = TOAST_CONTENT[type];
+
+  return (
+    <>
+      <style>{TOAST_CSS}</style>
+      <div
+        className="toast-enter absolute top-4 left-1/2 z-50 w-85 rounded-xl shadow-xl border overflow-hidden"
+        style={{ background: theme.bg, borderColor: theme.border }}
+      >
+        <div className="flex items-start gap-3 p-3.5">
+          <div
+            className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ background: theme.iconBg }}
+          >
+            <AlertCircle size={15} style={{ color: theme.icon }} />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold" style={{ color: theme.text }}>
+              {content.title(files.length)}
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: theme.sub }}>
+              {content.desc(files.length)}
+            </p>
+            <div className="flex flex-col gap-0.5 mt-1.5">
+              {files.map(f => (
+                <span key={f} className="flex items-center gap-1 text-[11px]" style={{ color: theme.text }}>
+                  <FileText size={10} />{f}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="shrink-0 w-5 h-5 rounded flex items-center justify-center cursor-pointer"
+            style={{ color: theme.sub }}
+          >
+            <X size={13} />
+          </button>
+        </div>
+
+        <div className="h-1" style={{ background: theme.bar }}>
+          <div className="toast-progress h-full" style={{ background: theme.progress }} />
+        </div>
+      </div>
+    </>
+  );
+}
+
 const QUICK_CHIPS = [
   '¿Cuáles son los pasos del proceso de garantía?',
   '¿Cómo se realiza la apertura de un caso?',
@@ -213,8 +316,16 @@ export default function ManualesPanel() {
   const [uploading, setUploading] = useState(false);
   const [indexing, setIndexing] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [toast, setToast] = useState(null); // { type: 'duplicate' | 'invalid', files: [] }
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
+  const toastTimerRef = useRef(null);
+
+  function showToast(type, files) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ type, files });
+    toastTimerRef.current = setTimeout(() => setToast(null), TOAST_DURATION + 100);
+  }
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -239,13 +350,17 @@ export default function ManualesPanel() {
     try {
       const res = await fetch('/api/rag/ingest', { method: 'POST', body: form });
       const data = await res.json();
-      const ok = data.results?.filter(r => r.status === 'ok') ?? [];
-      const err = data.results?.filter(r => r.status === 'error') ?? [];
+      const ok      = data.results?.filter(r => r.status === 'ok')      ?? [];
+      const err     = data.results?.filter(r => r.status === 'error')   ?? [];
+      const skipped = data.results?.filter(r => r.status === 'skipped') ?? [];
+
+      if (skipped.length) showToast('duplicate', skipped.map(r => r.file));
+
       const summary = ok.length
         ? `✅ ${ok.length} documento${ok.length > 1 ? 's' : ''} indexado${ok.length > 1 ? 's' : ''} correctamente (${ok.reduce((a, r) => a + r.chunks, 0)} fragmentos).`
         : '';
       const errMsg = err.length ? ` ⚠️ ${err.length} error${err.length > 1 ? 'es' : ''}: ${err.map(e => e.error).join(', ')}` : '';
-      appendBotMsg(summary + errMsg, []);
+      if (summary || errMsg) appendBotMsg(summary + errMsg, []);
       await fetchStatus();
       setShowUpload(false);
     } catch {
@@ -259,7 +374,11 @@ export default function ManualesPanel() {
     try {
       const res = await fetch('/api/rag/ingest-folder', { method: 'POST' });
       const data = await res.json();
-      const ok = data.results?.filter(r => r.status === 'ok') ?? [];
+      const ok      = data.results?.filter(r => r.status === 'ok')      ?? [];
+      const skipped = data.results?.filter(r => r.status === 'skipped') ?? [];
+
+      if (skipped.length) showToast('duplicate', skipped.map(r => r.file));
+
       appendBotMsg(
         ok.length
           ? `✅ Se indexaron ${ok.length} documento${ok.length > 1 ? 's' : ''} de la carpeta manuales.`
@@ -338,7 +457,9 @@ export default function ManualesPanel() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-(--bg-deep)">
+    <div className="relative flex-1 flex flex-col overflow-hidden bg-(--bg-deep)">
+
+      {toast && <FileToast type={toast.type} files={toast.files} onClose={() => setToast(null)} />}
 
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-3.5 border-b border-(--border) bg-(--bg-panel) shrink-0">
@@ -372,7 +493,11 @@ export default function ManualesPanel() {
       {/* Panel de carga de archivos (colapsable) */}
       {showUpload && (
         <div className="px-5 py-4 border-b border-(--border) bg-(--bg-panel) shrink-0">
-          <DropZone onUpload={handleUpload} uploading={uploading} />
+          <DropZone
+            onUpload={handleUpload}
+            onInvalidFiles={files => showToast('invalid', files)}
+            uploading={uploading}
+          />
           {status?.files?.length > 0 && (
             <div className="mt-3">
               <p className="text-xs text-(--text-muted) mb-1.5">Documentos en la carpeta:</p>
