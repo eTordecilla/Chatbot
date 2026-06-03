@@ -13,7 +13,7 @@ yamaha-chatbot/
 │   ├── services/
 │   │   ├── vectorStore.js       ← Motor BM25 con persistencia JSON
 │   │   ├── ragChain.js          ← Orquestador RAG + LLM (Anthropic / Groq)
-│   │   └── documentParser.js   ← Parseo de PDF (pdfminer) y DOCX (mammoth)
+│   │   └── documentParser.js   ← Parseo de PDF (unpdf/PDF.js) y DOCX (mammoth)
 │   └── utils/
 │       └── normalize.js         ← Tokenizador español compartido
 ├── client/                      ← Frontend React 18 + Vite + Tailwind CSS 4
@@ -48,14 +48,9 @@ Permite subir documentos PDF y DOCX, indexarlos automáticamente con BM25, y con
 
 - [Node.js 18+](https://nodejs.org)
 - [pnpm](https://pnpm.io)
-- [Python 3](https://python.org) con `pdfminer.six` (para parsear PDFs)
 - API key de [Anthropic](https://console.anthropic.com) o [Groq](https://console.groq.com) (Groq es gratuita)
 
-### Instalar pdfminer
-
-```bash
-pip install pdfminer.six
-```
+> No se requiere Python. El parseo de PDFs usa [unpdf](https://github.com/unjs/unpdf), una librería JavaScript pura basada en PDF.js.
 
 ## Instalación
 
@@ -163,6 +158,6 @@ El sistema usa una implementación propia de BM25 (sin dependencias externas de 
 | LLM principal | Anthropic Claude (claude-sonnet-4-6) |
 | LLM alternativo | Groq (llama-3.3-70b-versatile) |
 | Búsqueda | BM25 local con persistencia JSON |
-| Parseo PDF | pdfminer.six (Python) |
+| Parseo PDF | unpdf (PDF.js, JavaScript puro) |
 | Parseo DOCX | mammoth |
 | Gestión de paquetes | pnpm workspaces |

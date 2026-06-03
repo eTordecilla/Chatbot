@@ -65,7 +65,7 @@ yamaha-chatbot/
 │   ├── services/
 │   │   ├── vectorStore.js        ← Motor BM25 con persistencia en JSON
 │   │   ├── ragChain.js           ← Orquestador RAG → LLM
-│   │   └── documentParser.js    ← Parseo de PDF (pdfminer) y DOCX (mammoth)
+│   │   └── documentParser.js    ← Parseo de PDF (unpdf/PDF.js) y DOCX (mammoth)
 │   ├── utils/
 │   │   └── normalize.js          ← Tokenizador español compartido
 │   └── package.json
@@ -139,7 +139,7 @@ Hash MD5 del archivo
         │ (si hash igual al indexado → skip)
         ▼
 documentParser.parseDocument()
-  ├── PDF → python3 pdfminer → texto
+  ├── PDF → unpdf (PDF.js) → texto
   └── DOCX → mammoth → texto
         │
         ▼
@@ -171,7 +171,7 @@ saveIndex() → rag-index-manuales.json
 | Backend | Express | 4.21.0 | HTTP server |
 | Backend | multer | 2.1.1 | Upload de archivos |
 | Backend | mammoth | 1.12.0 | Parseo DOCX |
-| Backend | pdfminer.six | latest | Parseo PDF (Python) |
+| Backend | unpdf | 1.6.2 | Parseo PDF (PDF.js, JavaScript puro) |
 | LLM | Groq API | llama-3.3-70b | LLM principal (gratis) |
 | LLM | Anthropic API | claude-sonnet-4-6 | LLM alternativo |
 | Búsqueda | BM25 propio | — | Sin dependencias externas |
